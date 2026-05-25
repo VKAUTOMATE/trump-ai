@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TRUMP AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">T</div>
+          <div>
+            <p class="eyebrow">Transparent Research Utility</p>
+            <h1>TRUMP AI</h1>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Primary">
+          <button class="nav-item active" data-view="command"><span>Command</span><small>Ask anything</small></button>
+          <button class="nav-item" data-view="automation"><span>Automation</span><small>Tasks and alerts</small></button>
+          <button class="nav-item" data-view="news"><span>News</span><small>Briefing desk</small></button>
+          <button class="nav-item" data-view="markets"><span>Economics</span><small>Macro and markets</small></button>
+          <button class="nav-item" data-view="politics"><span>Politics</span><small>Policy tracker</small></button>
+          <button class="nav-item" data-view="sports"><span>Sports</span><small>Scores and storylines</small></button>
+          <button class="nav-item" data-view="settings"><span>Settings</span><small>Data sources</small></button>
+        </nav>
+
+        <div class="sidebar-card">
+          <p class="card-label">System mode</p>
+          <div class="mode-row"><span class="status-dot"></span><strong>Analyst</strong></div>
+          <p>Neutral summaries, source-aware research, and automations for repeat checks.</p>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">AI workspace</p>
+            <h2 id="view-title">Command Center</h2>
+          </div>
+          <div class="top-actions">
+            <button id="refresh-button" class="icon-button" title="Refresh briefings" aria-label="Refresh briefings">↻</button>
+            <button id="theme-button" class="icon-button" title="Change theme" aria-label="Change theme">◐</button>
+          </div>
+        </header>
+
+        <section id="command" class="view active">
+          <div class="command-grid">
+            <section class="chat-panel">
+              <div id="chat-log" class="chat-log" aria-live="polite"></div>
+              <form id="chat-form" class="chat-form">
+                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask TRUMP AI for a briefing, automation, market note, political summary, or sports update" />
+                <button type="submit">Send</button>
+              </form>
+            </section>
+
+            <section class="brief-stack">
+              <article class="brief-card accent-blue">
+                <p class="card-label">Today</p>
+                <h3>Daily Intelligence Brief</h3>
+                <p id="daily-brief"></p>
+              </article>
+              <article class="brief-card">
+                <p class="card-label">Quick Prompts</p>
+                <div class="prompt-list">
+                  <button data-prompt="Give me a five point news briefing.">News briefing</button>
+                  <button data-prompt="Create an automation to watch inflation, jobs, and Fed decisions.">Macro monitor</button>
+                  <button data-prompt="Summarize political risks for the week.">Politics risk</button>
+                  <button data-prompt="What sports stories should I watch tonight?">Sports slate</button>
+                </div>
+              </article>
+              <article class="brief-card">
+                <p class="card-label">Readiness</p>
+                <div id="readiness-list" class="readiness-list"></div>
+              </article>
+            </section>
+          </div>
+        </section>
+
+        <section id="automation" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Automations</p>
+              <h3>Task and Alert Builder</h3>
+            </div>
+            <button id="add-task-button">Add Automation</button>
+          </div>
+          <div class="automation-toolbar">
+            <button id="export-tasks-button" class="subtle">Export JSON</button>
+            <button id="reset-tasks-button" class="subtle">Reset Defaults</button>
+          </div>
+          <div id="task-list" class="task-list"></div>
+        </section>
+
+        <section id="news" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">News</p>
+              <h3>Live-Ready Briefing Desk</h3>
+            </div>
+            <select id="news-filter" aria-label="Filter news">
+              <option value="all">All</option>
+              <option value="world">World</option>
+              <option value="business">Business</option>
+              <option value="technology">Technology</option>
+            </select>
+          </div>
+          <div id="news-grid" class="content-grid"></div>
+        </section>
+
+        <section id="markets" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Economics</p>
+              <h3>Macro Dashboard</h3>
+            </div>
+            <button id="simulate-markets">Simulate Update</button>
+          </div>
+          <div id="market-grid" class="market-grid"></div>
+        </section>
+
+        <section id="politics" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Politics</p>
+              <h3>Policy and Election Tracker</h3>
+            </div>
+            <span class="badge">Nonpartisan</span>
+          </div>
+          <div id="politics-grid" class="content-grid"></div>
+        </section>
+
+        <section id="sports" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Sports</p>
+              <h3>Scores, Schedules, and Angles</h3>
+            </div>
+            <select id="league-filter" aria-label="Filter league">
+              <option value="all">All leagues</option>
+              <option value="NBA">NBA</option>
+              <option value="NFL">NFL</option>
+              <option value="MLB">MLB</option>
+              <option value="NHL">NHL</option>
+            </select>
+          </div>
+          <div id="sports-grid" class="content-grid"></div>
+        </section>
+
+        <section id="settings" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Settings</p>
+              <h3>Source and Model Console</h3>
+            </div>
+            <button id="save-settings-button">Save Settings</button>
+          </div>
+          <div class="settings-grid">
+            <article class="settings-panel">
+              <h4>Connections</h4>
+              <label><span>News source</span><input id="news-source" type="text" placeholder="RSS feed, news API, or search endpoint" /></label>
+              <label><span>Market source</span><input id="market-source" type="text" placeholder="Market data API or economics calendar" /></label>
+              <label><span>Sports source</span><input id="sports-source" type="text" placeholder="Sports scores API or league feed" /></label>
+              <label><span>Primary model</span><input id="model-name" type="text" placeholder="Model name for summarization" /></label>
+            </article>
+            <article class="settings-panel">
+              <h4>Output Profile</h4>
+              <label><span>Tone</span>
+                <select id="tone-setting">
+                  <option value="neutral">Neutral analyst</option>
+                  <option value="executive">Executive brief</option>
+                  <option value="skeptical">Skeptical fact-checker</option>
+                  <option value="sportsdesk">Sports desk</option>
+                </select>
+              </label>
+              <label><span>Default brief length</span>
+                <select id="length-setting">
+                  <option value="short">Short</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="deep">Deep dive</option>
+                </select>
+              </label>
+              <label class="check-row"><input id="citations-setting" type="checkbox" /> <span>Require citations before making factual claims</span></label>
+              <label class="check-row"><input id="alerts-setting" type="checkbox" /> <span>Flag urgent changes in the command center</span></label>
+            </article>
+          </div>
+          <article class="brief-card">
+            <p class="card-label">Integration Plan</p>
+            <div id="integration-plan" class="integration-plan"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <template id="task-template">
+      <article class="task-card">
+        <label><span>Task name</span><input class="task-name" type="text" /></label>
+        <label>
+          <span>Cadence</span>
+          <select class="task-cadence">
+            <option>Hourly</option>
+            <option>Daily</option>
+            <option>Weekly</option>
+            <option>Market open</option>
+          </select>
+        </label>
+        <label><span>Focus</span><textarea class="task-focus" rows="3"></textarea></label>
+        <label class="check-row"><input class="task-active" type="checkbox" /> <span>Active</span></label>
+        <div class="task-actions">
+          <button class="save-task" type="button">Save</button>
+          <button class="delete-task subtle" type="button">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
