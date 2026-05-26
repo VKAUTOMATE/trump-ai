@@ -210,6 +210,14 @@ button:hover {
   gap: 10px;
 }
 
+.section-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .icon-button {
   align-items: center;
   background: var(--panel);
@@ -332,9 +340,15 @@ textarea,
 .task-list,
 .settings-grid,
 .readiness-list,
-.integration-plan {
+.integration-plan,
+.live-grid {
   display: grid;
   gap: 14px;
+}
+
+.live-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
 }
 
 .content-grid {
@@ -350,6 +364,36 @@ textarea,
 .task-card,
 .settings-panel {
   padding: 16px;
+}
+
+.live-summary {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.live-summary h4,
+.live-summary p {
+  margin: 0;
+}
+
+.live-summary .card-label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.live-summary span {
+  font-weight: 800;
+}
+
+.live-card footer a {
+  color: var(--primary-dark);
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .data-card h4,
@@ -408,6 +452,34 @@ textarea,
 
 .task-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.alert-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.alert-stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.alert-stat strong {
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.alert-stat span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .settings-grid {
@@ -532,7 +604,9 @@ textarea,
   .content-grid,
   .market-grid,
   .task-list,
-  .settings-grid {
+  .settings-grid,
+  .live-grid,
+  .alert-summary {
     grid-template-columns: 1fr;
   }
 }
@@ -547,6 +621,14 @@ textarea,
   .section-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .section-actions {
+    justify-content: stretch;
+  }
+
+  .section-actions > * {
+    width: 100%;
   }
 
   .chat-form {

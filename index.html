@@ -94,9 +94,11 @@
             <button id="add-task-button">Add Automation</button>
           </div>
           <div class="automation-toolbar">
+            <button id="run-alerts-button" class="subtle">Run Check Now</button>
             <button id="export-tasks-button" class="subtle">Export JSON</button>
             <button id="reset-tasks-button" class="subtle">Reset Defaults</button>
           </div>
+          <div id="alert-summary" class="alert-summary"></div>
           <div id="task-list" class="task-list"></div>
         </section>
 
@@ -106,13 +108,17 @@
               <p class="eyebrow">News</p>
               <h3>Live-Ready Briefing Desk</h3>
             </div>
-            <select id="news-filter" aria-label="Filter news">
-              <option value="all">All</option>
-              <option value="world">World</option>
-              <option value="business">Business</option>
-              <option value="technology">Technology</option>
-            </select>
+            <div class="section-actions">
+              <select id="news-filter" aria-label="Filter news">
+                <option value="all">All</option>
+                <option value="world">World</option>
+                <option value="business">Business</option>
+                <option value="technology">Technology</option>
+              </select>
+              <button class="live-button" data-live="news">Load Live News</button>
+            </div>
           </div>
+          <div id="news-live-grid" class="live-grid"></div>
           <div id="news-grid" class="content-grid"></div>
         </section>
 
@@ -122,8 +128,12 @@
               <p class="eyebrow">Economics</p>
               <h3>Macro Dashboard</h3>
             </div>
-            <button id="simulate-markets">Simulate Update</button>
+            <div class="section-actions">
+              <button id="simulate-markets">Simulate Update</button>
+              <button class="live-button" data-live="economics">Load Live Economics</button>
+            </div>
           </div>
+          <div id="economics-live-grid" class="live-grid"></div>
           <div id="market-grid" class="market-grid"></div>
         </section>
 
@@ -133,8 +143,12 @@
               <p class="eyebrow">Politics</p>
               <h3>Policy and Election Tracker</h3>
             </div>
-            <span class="badge">Nonpartisan</span>
+            <div class="section-actions">
+              <span class="badge">Nonpartisan</span>
+              <button class="live-button" data-live="politics">Load Live Politics</button>
+            </div>
           </div>
+          <div id="politics-live-grid" class="live-grid"></div>
           <div id="politics-grid" class="content-grid"></div>
         </section>
 
@@ -144,14 +158,22 @@
               <p class="eyebrow">Sports</p>
               <h3>Scores, Schedules, and Angles</h3>
             </div>
-            <select id="league-filter" aria-label="Filter league">
-              <option value="all">All leagues</option>
-              <option value="NBA">NBA</option>
-              <option value="NFL">NFL</option>
-              <option value="MLB">MLB</option>
-              <option value="NHL">NHL</option>
-            </select>
+            <div class="section-actions">
+              <select id="league-filter" aria-label="Filter league">
+                <option value="all">All leagues</option>
+                <option value="NBA">NBA</option>
+                <option value="NFL">NFL</option>
+                <option value="MLB">MLB</option>
+                <option value="NHL">NHL</option>
+                <option value="GOLF">Golf</option>
+                <option value="TENNIS">Tennis</option>
+                <option value="UFC">UFC</option>
+                <option value="BOXING">Boxing</option>
+              </select>
+              <button class="live-button" data-live="sports">Load Live Sports</button>
+            </div>
           </div>
+          <div id="sports-live-grid" class="live-grid"></div>
           <div id="sports-grid" class="content-grid"></div>
         </section>
 
@@ -172,9 +194,9 @@
             </article>
             <article class="settings-panel">
               <h4>Live Data Sources</h4>
-              <label><span>News source</span><input id="news-source" type="text" placeholder="RSS feed, news API, or search endpoint" /></label>
-              <label><span>Market source</span><input id="market-source" type="text" placeholder="Market data API or economics calendar" /></label>
-              <label><span>Sports source</span><input id="sports-source" type="text" placeholder="Sports scores API or league feed" /></label>
+              <label><span>News source</span><input id="news-source" type="text" placeholder="Default: GDELT headlines API" /></label>
+              <label><span>Market/economics source</span><input id="market-source" type="text" placeholder="Default: Stooq, BLS, U.S. Treasury" /></label>
+              <label><span>Sports source</span><input id="sports-source" type="text" placeholder="Default: ESPN scoreboard APIs" /></label>
             </article>
             <article class="settings-panel">
               <h4>Output Profile</h4>
@@ -217,7 +239,20 @@
             <option>Market open</option>
           </select>
         </label>
+        <label><span>Schedule time</span><input class="task-time" type="time" /></label>
         <label><span>Focus</span><textarea class="task-focus" rows="3"></textarea></label>
+        <label>
+          <span>Notify by</span>
+          <select class="task-channel">
+            <option value="dashboard">Dashboard only</option>
+            <option value="email">Email</option>
+            <option value="sms">Text message</option>
+            <option value="both">Email and text</option>
+          </select>
+        </label>
+        <label><span>Email</span><input class="task-email" type="email" placeholder="you@example.com" /></label>
+        <label><span>Phone for text</span><input class="task-phone" type="tel" placeholder="+1 555 000 0000" /></label>
+        <label><span>Trigger</span><input class="task-trigger" type="text" placeholder="Breaking change, threshold, keyword, team, ticker..." /></label>
         <label class="check-row"><input class="task-active" type="checkbox" /> <span>Active</span></label>
         <div class="task-actions">
           <button class="save-task" type="button">Save</button>
