@@ -361,6 +361,60 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.landing-live-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  margin-bottom: 18px;
+}
+
+.landing-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  min-height: 178px;
+  padding: 14px;
+}
+
+.landing-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.landing-card-top {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.landing-card h4,
+.landing-card p {
+  margin: 0;
+}
+
+.landing-card h4 {
+  font-size: 16px;
+}
+
+.landing-card p:last-child {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.live-pill {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 8px;
+}
+
 .dashboard-tile {
   align-items: center;
   background: var(--panel);
@@ -859,6 +913,7 @@ textarea,
 
   .command-grid,
   .dashboard-grid,
+  .landing-live-grid,
   .content-grid,
   .market-grid,
   .task-list,
@@ -874,6 +929,18 @@ textarea,
   .main-panel,
   .sidebar {
     padding: 16px;
+  }
+
+  .app-shell {
+    min-height: 100dvh;
+  }
+
+  .brand {
+    align-items: flex-start;
+  }
+
+  .brand h1 {
+    font-size: 22px;
   }
 
   .topbar,
@@ -900,8 +967,28 @@ textarea,
     width: 100%;
   }
 
+  .dashboard-hero h3 {
+    font-size: 21px;
+  }
+
+  .landing-card {
+    min-height: auto;
+  }
+
   .chat-form {
     grid-template-columns: 1fr;
+  }
+
+  .chat-panel {
+    min-height: 520px;
+  }
+
+  .chat-log {
+    padding: 14px;
+  }
+
+  .message {
+    max-width: 100%;
   }
 
   .automation-toolbar,

@@ -82,6 +82,7 @@ const alertSummary = document.querySelector("#alert-summary");
 const readinessList = document.querySelector("#readiness-list");
 const integrationPlan = document.querySelector("#integration-plan");
 const preferenceSummary = document.querySelector("#preference-summary");
+const landingLiveGrid = document.querySelector("#landing-live-grid");
 
 let tasks = [];
 let settings = { ...defaultSettings };
@@ -219,6 +220,78 @@ function setView(viewName) {
   document.querySelector(`#${viewName}`).classList.add("active");
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === viewName));
   viewTitle.textContent = views[viewName];
+}
+
+function renderLandingCards() {
+  if (!landingLiveGrid) return;
+  const activeAlerts = tasks.filter((task) => task.active).length;
+  const savedPreferences = splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length + (settings.homeRegion ? 1 : 0);
+  const cards = [
+    {
+      icon: "◫",
+      label: "News",
+      title: liveData.news.length ? `${liveData.news.length} live headlines` : "Ready for headlines",
+      text: liveData.news[0]?.title || "Load live headlines from the News desk.",
+      action: "news",
+      status: liveData.news.length ? "Live" : "Ready",
+    },
+    {
+      icon: "▴",
+      label: "Economics",
+      title: liveData.economics.length ? `${liveData.economics.length} market signals` : "Stocks and macro",
+      text: liveData.economics[0]?.title || "Load stocks, inflation, jobs, and rates.",
+      action: "markets",
+      status: liveData.economics.length ? "Live" : "Ready",
+    },
+    {
+      icon: "⚖",
+      label: "Politics",
+      title: liveData.politics.length ? `${liveData.politics.length} policy updates` : "Government tracker",
+      text: liveData.politics[0]?.title || "Load Federal Register and policy updates.",
+      action: "politics",
+      status: liveData.politics.length ? "Live" : "Ready",
+    },
+    {
+      icon: "●",
+      label: "Sports",
+      title: liveData.sports.length ? `${liveData.sports.length} score items` : "Scores and schedules",
+      text: liveData.sports[0]?.title || "Search NBA, NFL, MLB, NHL, golf, tennis, UFC, boxing.",
+      action: "sports",
+      status: liveData.sports.length ? "Live" : "Ready",
+    },
+    {
+      icon: "⏱",
+      label: "Automation",
+      title: `${activeAlerts} active alerts`,
+      text: "Saved schedules, triggers, email/text routes, and IndexedDB storage.",
+      action: "automation",
+      status: activeAlerts ? "Armed" : "Setup",
+    },
+    {
+      icon: "⚙",
+      label: "Profile",
+      title: `${savedPreferences} saved preferences`,
+      text: settings.homeRegion || settings.favoriteTeams || "Add teams, tickers, topics, and region.",
+      action: "settings",
+      status: savedPreferences ? "Saved" : "Setup",
+    },
+  ];
+
+  landingLiveGrid.innerHTML = cards.map((card) => `
+    <article class="landing-card" data-jump="${card.action}">
+      <div class="landing-card-top">
+        <span class="tile-icon">${card.icon}</span>
+        <span class="live-pill">${card.status}</span>
+      </div>
+      <p class="card-label">${card.label}</p>
+      <h4>${escapeHtml(card.title)}</h4>
+      <p>${escapeHtml(card.text)}</p>
+    </article>
+  `).join("");
+
+  landingLiveGrid.querySelectorAll("[data-jump]").forEach((card) => {
+    card.addEventListener("click", () => setView(card.dataset.jump));
+  });
 }
 
 function addMessage(role, text) {
@@ -389,6 +462,7 @@ function renderLiveCards(topic, items) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
   liveData[topic] = items;
+  renderLandingCards();
 
   if (!items.length) {
     container.innerHTML = "";
@@ -708,6 +782,7 @@ async function runAutomationCheck() {
   renderTasks();
   renderAlertSummary();
   renderReadiness();
+  renderLandingCards();
   const activeTasks = tasks.filter((task) => task.active);
   const alertLines = activeTasks.map((task) => `${task.name}: ${task.cadence}${task.scheduleTime ? ` at ${task.scheduleTime}` : ""}; notify by ${getNotificationLabel(task)}; trigger: ${task.trigger || "any important change"}.`);
   addMessage("ai", `Automation check completed at ${checkedAt}. ${activeTasks.length} active alert${activeTasks.length === 1 ? "" : "s"} queued.\n\n${alertLines.join("\n")}\n\nEmail/text delivery is configured as routing data here; sending requires a backend notification service such as SendGrid, Twilio, or a serverless function.`);
@@ -760,6 +835,7 @@ function renderPreferenceSummary() {
       <span class="chip">${escapeHtml(settings.homeRegion || "Not saved yet")}</span>
     </div>
   `;
+  renderLandingCards();
 }
 
 function collectSettingsFromForm() {
@@ -941,6 +1017,7 @@ async function initializeApp() {
   renderTasks();
   renderAlertSummary();
   renderSettings();
+  renderLandingCards();
   wirePreferenceAutosave();
   addMessage("ai", "Welcome to TRUMP AI. I can draft briefings, plan saved alerts, organize research, and summarize news, economics, politics, and sports from one command center.");
 }
