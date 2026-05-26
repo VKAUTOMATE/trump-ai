@@ -218,6 +218,13 @@ button:hover {
   justify-content: flex-end;
 }
 
+.section-note {
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.4;
+  margin: -10px 0 16px;
+}
+
 .icon-button {
   align-items: center;
   background: var(--panel);
