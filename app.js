@@ -9,21 +9,21 @@ const views = {
 };
 
 const newsItems = [
-  { category: "world", title: "Global Watch", text: "Track major diplomatic, security, and humanitarian developments with concise context and impact notes.", source: "Prototype briefing model", timestamp: "Prototype" },
-  { category: "business", title: "Corporate Signals", text: "Summarize earnings, layoffs, mergers, supply chains, and CEO commentary into an executive-ready digest.", source: "Prototype business desk", timestamp: "Prototype" },
-  { category: "technology", title: "AI and Tech", text: "Monitor product launches, model releases, regulation, chips, cybersecurity, and platform policy changes.", source: "Prototype tech radar", timestamp: "Prototype" },
-  { category: "business", title: "Energy and Commodities", text: "Connect oil, gas, power, agriculture, metals, and shipping moves to inflation and market pressure.", source: "Prototype macro desk", timestamp: "Prototype" },
-  { category: "world", title: "Risk Map", text: "Flag countries, regions, and events where policy risk could spill into markets or security planning.", source: "Prototype risk engine", timestamp: "Prototype" },
-  { category: "technology", title: "Platform Pulse", text: "Watch search, social, streaming, and app store changes that influence media reach and consumer behavior.", source: "Prototype media monitor", timestamp: "Prototype" },
+  { category: "world", title: "Global Watch", text: "Track major diplomatic, security, and humanitarian developments with concise context and impact notes.", source: "Waiting for live news", timestamp: "Not loaded yet" },
+  { category: "business", title: "Corporate Signals", text: "Summarize earnings, layoffs, mergers, supply chains, and CEO commentary into an executive-ready digest.", source: "Waiting for live business news", timestamp: "Not loaded yet" },
+  { category: "technology", title: "AI and Tech", text: "Monitor product launches, model releases, regulation, chips, cybersecurity, and platform policy changes.", source: "Waiting for live technology news", timestamp: "Not loaded yet" },
+  { category: "business", title: "Energy and Commodities", text: "Connect oil, gas, power, agriculture, metals, and shipping moves to inflation and market pressure.", source: "Waiting for live market news", timestamp: "Not loaded yet" },
+  { category: "world", title: "Risk Map", text: "Flag countries, regions, and events where policy risk could spill into markets or security planning.", source: "Waiting for live risk news", timestamp: "Not loaded yet" },
+  { category: "technology", title: "Platform Pulse", text: "Watch search, social, streaming, and app store changes that influence media reach and consumer behavior.", source: "Waiting for live platform news", timestamp: "Not loaded yet" },
 ];
 
 const politicsItems = [
-  { title: "Policy Calendar", text: "Build weekly summaries of votes, hearings, executive actions, court deadlines, and agency rulemaking.", source: "Prototype civic tracker", timestamp: "Prototype" },
-  { title: "Election Landscape", text: "Compare polling direction, fundraising, turnout indicators, ballot access, and district-level pressure points.", source: "Prototype elections desk", timestamp: "Prototype" },
-  { title: "Legislation Monitor", text: "Turn bills and amendments into plain-English summaries with likely winners, losers, and open questions.", source: "Prototype policy parser", timestamp: "Prototype" },
-  { title: "Public Opinion", text: "Separate headline noise from durable opinion shifts across economy, immigration, health care, and foreign policy.", source: "Prototype sentiment desk", timestamp: "Prototype" },
-  { title: "Geopolitics", text: "Connect international political developments to trade, defense, supply chains, energy, and financial markets.", source: "Prototype global policy", timestamp: "Prototype" },
-  { title: "Accountability", text: "Highlight claims that need verification and identify the primary sources needed to check them.", source: "Prototype fact file", timestamp: "Prototype" },
+  { title: "Policy Calendar", text: "Build weekly summaries of votes, hearings, executive actions, court deadlines, and agency rulemaking.", source: "Waiting for live government data", timestamp: "Not loaded yet" },
+  { title: "Election Landscape", text: "Compare polling direction, fundraising, turnout indicators, ballot access, and district-level pressure points.", source: "Waiting for live election data", timestamp: "Not loaded yet" },
+  { title: "Legislation Monitor", text: "Turn bills and amendments into plain-English summaries with likely winners, losers, and open questions.", source: "Waiting for live legislation data", timestamp: "Not loaded yet" },
+  { title: "Public Opinion", text: "Separate headline noise from durable opinion shifts across economy, immigration, health care, and foreign policy.", source: "Waiting for live public data", timestamp: "Not loaded yet" },
+  { title: "Geopolitics", text: "Connect international political developments to trade, defense, supply chains, energy, and financial markets.", source: "Waiting for live policy data", timestamp: "Not loaded yet" },
+  { title: "Accountability", text: "Highlight claims that need verification and identify the primary sources needed to check them.", source: "Waiting for live source data", timestamp: "Not loaded yet" },
 ];
 
 const sportsItems = [
@@ -100,7 +100,7 @@ const domainPrompts = {
   economics: `Economics mode: explain macro signals, market context, inflation, labor, rates, credit, commodities, and consumer data. Avoid financial advice. Present assumptions, risks, and data that would change the view.`,
   politics: `Politics mode: stay nonpartisan. Explain policy, institutions, elections, legislation, courts, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
   sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results.`,
-  automation: `Automation planning mode: convert user goals into monitors, triggers, cadence, sources, thresholds, and output formats. Be specific about what can run now in this prototype versus what needs a backend scheduler.`,
+  automation: `Automation planning mode: convert user goals into monitors, triggers, cadence, sources, thresholds, and output formats. Be specific about what can run now in this browser app versus what needs a backend scheduler.`,
   verify: `Verification mode: evaluate the claim cautiously. Break the answer into Claim, What is known, What needs verification, Best sources to check, and Confidence. Do not invent citations. If live source data is missing, say that primary-source checking is required.`,
 };
 
@@ -318,7 +318,7 @@ function setLoadingButton(button, isLoading, label) {
   delete button.dataset.originalHtml;
 }
 
-function generatePrototypeReply(prompt) {
+function generateOfflineReply(prompt) {
   const lower = prompt.toLowerCase();
   const activeTasks = tasks.filter((task) => task.active).length;
   const sourceCount = [settings.newsSource, settings.marketSource, settings.sportsSource].filter(Boolean).length;
@@ -345,7 +345,7 @@ function generatePrototypeReply(prompt) {
   if (lower.includes("news") || lower.includes("brief")) {
     return `News brief: prioritize verified breaking events, business impact, geopolitical risk, technology shifts, and policy consequences. Current profile: ${profile}.`;
   }
-  return `Ask-anything mode: I can help explain, write, plan, summarize, brainstorm, or organize this request. Because no OpenAI API key is connected in this browser, this is a prototype answer instead of a full live model response.\n\nBest next step: add your OpenAI API key in Settings, then ask the same question again for a real AI answer. Current profile: ${profile}.`;
+  return `Ask-anything mode: I can help explain, write, plan, summarize, brainstorm, or organize this request. Because no OpenAI API key is connected in this browser, this is an offline helper answer instead of a full AI API response.\n\nBest next step: add your OpenAI API key in Settings, then ask the same question again for a real AI answer. Current profile: ${profile}.`;
 }
 
 function classifyPrompt(prompt) {
@@ -448,6 +448,7 @@ async function askOpenAI(prompt) {
 
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
   const container = document.querySelector(containerSelector);
+  const fallbackSource = containerSelector.includes("sports") ? "waiting for live sports" : containerSelector.includes("politics") ? "waiting for live politics" : "waiting for live news";
   container.innerHTML = "";
   items
     .filter((item) => filter === "all" || item[filterKey] === filter)
@@ -455,10 +456,10 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge analysis">Opinion / Analysis</span><span>${escapeHtml(item.timestamp || "Prototype")}</span></div>
+        <div class="trust-row"><span class="trust-badge analysis">Live Ready</span><span>${escapeHtml(item.timestamp || "Not loaded yet")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
-        <footer><span>Source: ${item.source || item.league}</span><span>${item.timestamp || "Ready"}</span></footer>
+        <footer><span>Source: ${item.source || item.league || fallbackSource}</span><span>${item.timestamp || "Click live search"}</span></footer>
       `;
       container.append(card);
     });
@@ -515,7 +516,7 @@ function renderLiveError(topic, error) {
     <article class="data-card live-card">
       <h4>Live ${topic} unavailable</h4>
       <p>${escapeHtml(error.message || "The live source did not respond. Try again later.")}</p>
-      <footer><span>Fallback active</span><span>Prototype cards below</span></footer>
+      <footer><span>Source pending</span><span>Live-ready cards below</span></footer>
     </article>
   `;
 }
@@ -546,20 +547,36 @@ function proxyUrl(url) {
   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
+function proxyUrls(url) {
+  return [
+    url,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  ];
+}
+
 async function fetchTextWithProxyFallback(url) {
-  try {
-    return await fetchText(url);
-  } catch {
-    return fetchText(proxyUrl(url));
+  let lastError;
+  for (const target of proxyUrls(url)) {
+    try {
+      return await fetchText(target);
+    } catch (error) {
+      lastError = error;
+    }
   }
+  throw lastError || new Error("Source unavailable");
 }
 
 async function fetchJsonWithProxyFallback(url) {
-  try {
-    return await fetchJson(url);
-  } catch {
-    return fetchJson(proxyUrl(url));
+  let lastError;
+  for (const target of proxyUrls(url)) {
+    try {
+      return await fetchJson(target);
+    } catch (error) {
+      lastError = error;
+    }
   }
+  throw lastError || new Error("Source unavailable");
 }
 
 async function fetchBlsSeries() {
@@ -620,6 +637,22 @@ function alphaVantageQuoteToItem(data) {
   };
 }
 
+function yahooChartToItem(data, symbol, label) {
+  const result = data.chart?.result?.[0];
+  const quote = result?.meta || {};
+  const close = quote.regularMarketPrice ?? quote.previousClose ?? "n/a";
+  const previous = quote.previousClose ?? "n/a";
+  const time = quote.regularMarketTime ? new Date(quote.regularMarketTime * 1000).toLocaleString() : "Latest";
+  if (!result || close === "n/a") throw new Error(`No Yahoo market row for ${symbol}`);
+  return {
+    title: `${label} market quote`,
+    text: `${time}: price ${close}, previous close ${previous}, exchange ${quote.exchangeName || "n/a"}.`,
+    source: `Yahoo Finance ${symbol}`,
+    timestamp: time,
+    url: `https://finance.yahoo.com/quote/${symbol}`,
+  };
+}
+
 async function loadLiveNews() {
   const data = await fetchJson("https://api.gdeltproject.org/api/v2/doc/doc?query=breaking%20news&mode=ArtList&format=json&maxrecords=6&sort=HybridRel");
   return (data.articles || []).slice(0, 6).map((article) => ({
@@ -633,8 +666,17 @@ async function loadLiveNews() {
 
 async function loadLiveEconomics() {
   const requests = [
+    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1d&interval=1m").then((data) => yahooChartToItem(data, "SPY", "S&P 500 ETF")),
+    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/UUP?range=1d&interval=1m").then((data) => yahooChartToItem(data, "UUP", "U.S. Dollar ETF")),
+    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/USO?range=1d&interval=1m").then((data) => yahooChartToItem(data, "USO", "Oil ETF")),
+    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/HYG?range=1d&interval=1m").then((data) => yahooChartToItem(data, "HYG", "High yield credit ETF")),
+    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/XLY?range=1d&interval=1m").then((data) => yahooChartToItem(data, "XLY", "Consumer discretionary ETF")),
     fetchTextWithProxyFallback("https://stooq.com/q/l/?s=spy.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "spy.us", "S&P 500 ETF")),
     fetchTextWithProxyFallback("https://stooq.com/q/l/?s=qqq.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "qqq.us", "Nasdaq 100 ETF")),
+    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=uup.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uup.us", "U.S. Dollar ETF")),
+    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=uso.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uso.us", "Oil ETF")),
+    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=hyg.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "hyg.us", "High yield credit ETF")),
+    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=xly.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "xly.us", "Consumer discretionary ETF")),
     fetchJsonWithProxyFallback("https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo").then(alphaVantageQuoteToItem),
     fetchBlsSeries().then(blsSeriesToItems),
     fetchJson("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&page[size]=3")
@@ -652,7 +694,7 @@ async function loadLiveEconomics() {
     return Array.isArray(result.value) ? result.value : [result.value];
   });
   if (!items.length) throw new Error("Stocks, BLS, and Treasury sources were unavailable.");
-  return items.slice(0, 10);
+  return items.slice(0, 14);
 }
 
 async function loadLivePolitics() {
@@ -730,11 +772,11 @@ function renderMarkets() {
     const card = document.createElement("article");
     card.className = "metric-card";
     card.innerHTML = `
-      <div class="trust-row"><span class="trust-badge analysis">Opinion / Analysis</span><span>Prototype</span></div>
+      <div class="trust-row"><span class="trust-badge analysis">Live Ready</span><span>Not loaded yet</span></div>
       <h4>${metric.label}</h4>
       <span class="metric-value ${metric.tone}">${metric.value}</span>
       <p>${metric.note}</p>
-      <footer><span>Source: prototype monitor</span><span>Load live economics</span></footer>
+      <footer><span>Source: waiting for live economics</span><span>Click Load Live Economics</span></footer>
     `;
     container.append(card);
   });
@@ -744,17 +786,31 @@ function renderMarketsFromLive(items) {
   const container = document.querySelector("#market-grid");
   if (!container) return;
   container.innerHTML = "";
-  items.forEach((item) => {
+  const findItem = (...patterns) => items.find((item) => {
+    const haystack = `${item.title || ""} ${item.text || ""} ${item.source || ""}`.toLowerCase();
+    return patterns.some((pattern) => haystack.includes(pattern));
+  });
+  const liveMetrics = [
+    { label: "Inflation trend", item: findItem("inflation", "cpi"), fallback: "Waiting on BLS inflation source." },
+    { label: "Labor market", item: findItem("jobs", "payroll", "unemployment"), fallback: "Waiting on BLS labor source." },
+    { label: "Fed stance", item: findItem("treasury", "rate"), fallback: "Waiting on Treasury rate source." },
+    { label: "Consumer", item: findItem("consumer discretionary", "xly"), fallback: "Waiting on consumer market source." },
+    { label: "Equities", item: findItem("s&p", "nasdaq", "stock quote", "spy", "qqq", "ibm"), fallback: "Waiting on equity quote source." },
+    { label: "Dollar", item: findItem("dollar", "uup"), fallback: "Waiting on dollar source." },
+    { label: "Oil", item: findItem("oil", "uso"), fallback: "Waiting on oil source." },
+    { label: "Credit", item: findItem("credit", "hyg", "high yield"), fallback: "Waiting on credit source." },
+  ];
+  liveMetrics.forEach(({ label, item, fallback }) => {
     const card = document.createElement("article");
     card.className = "metric-card live-metric-card";
     card.innerHTML = `
-      <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
-      <h4>${escapeHtml(item.title)}</h4>
-      <span class="metric-value up">Live</span>
-      <p>${escapeHtml(item.text)}</p>
+      <div class="trust-row"><span class="trust-badge ${item ? "fact" : "analysis"}">${item ? "Fact Source" : "Source Pending"}</span><span>${escapeHtml(item?.timestamp || "Live check")}</span></div>
+      <h4>${escapeHtml(label)}</h4>
+      <span class="metric-value ${item ? "up" : "flat"}">${item ? "Live" : "Pending"}</span>
+      <p>${escapeHtml(item ? `${item.title}: ${item.text}` : fallback)}</p>
       <footer>
-        <span>${escapeHtml(item.source || "Live economics source")}</span>
-        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
+        <span>${escapeHtml(item?.source || "Live economics source")}</span>
+        ${item?.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Retry live load</span>"}
       </footer>
     `;
     container.append(card);
@@ -996,11 +1052,11 @@ chatForm.addEventListener("submit", async (event) => {
   const thinkingMessage = addMessage("ai", settings.openaiApiKey ? "Thinking..." : "API key needed. Add your OpenAI API key in Settings to get real AI answers.");
 
   try {
-    const reply = settings.openaiApiKey ? await askOpenAI(prompt) : generatePrototypeReply(prompt);
+    const reply = settings.openaiApiKey ? await askOpenAI(prompt) : generateOfflineReply(prompt);
     thinkingMessage.textContent = reply;
     conversationHistory.push({ role: "ai", text: reply });
   } catch (error) {
-    const fallback = `${error.message}\n\nPrototype fallback: ${generatePrototypeReply(prompt)}`;
+    const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(prompt)}`;
     thinkingMessage.textContent = fallback;
     conversationHistory.push({ role: "ai", text: fallback });
   } finally {
