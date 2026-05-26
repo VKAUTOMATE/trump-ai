@@ -66,6 +66,10 @@ const defaultSettings = {
   length: "balanced",
   citations: true,
   alerts: true,
+  favoriteTeams: "",
+  marketWatchlist: "",
+  topicWatchlist: "",
+  homeRegion: "",
 };
 
 const chatLog = document.querySelector("#chat-log");
@@ -77,6 +81,7 @@ const taskList = document.querySelector("#task-list");
 const alertSummary = document.querySelector("#alert-summary");
 const readinessList = document.querySelector("#readiness-list");
 const integrationPlan = document.querySelector("#integration-plan");
+const preferenceSummary = document.querySelector("#preference-summary");
 
 let tasks = [];
 let settings = { ...defaultSettings };
@@ -197,6 +202,18 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function splitList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatList(value, fallback = "none saved") {
+  const items = splitList(value);
+  return items.length ? items.join(", ") : fallback;
+}
+
 function setView(viewName) {
   document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
   document.querySelector(`#${viewName}`).classList.add("active");
@@ -268,6 +285,12 @@ function buildSystemPrompt(prompt) {
       return `${topic}: ${items.slice(0, 4).map((item) => item.title || item.value || item.text).join("; ")}`;
     })
     .join("\n");
+  const userPreferences = [
+    `Favorite teams: ${formatList(settings.favoriteTeams)}`,
+    `Market watchlist: ${formatList(settings.marketWatchlist)}`,
+    `Topics: ${formatList(settings.topicWatchlist)}`,
+    `Home region: ${settings.homeRegion || "not set"}`,
+  ].join("\n");
 
   return [
     domainPrompts.base,
@@ -277,6 +300,8 @@ function buildSystemPrompt(prompt) {
     sources,
     "Current active automation context:",
     activeTaskSummary,
+    "User saved preferences:",
+    userPreferences,
     "Latest live data loaded in this browser:",
     liveSummary,
   ].filter(Boolean).join("\n\n");
@@ -684,8 +709,75 @@ function renderSettings() {
   document.querySelector("#length-setting").value = settings.length;
   document.querySelector("#citations-setting").checked = settings.citations;
   document.querySelector("#alerts-setting").checked = settings.alerts;
+  document.querySelector("#favorite-teams").value = settings.favoriteTeams;
+  document.querySelector("#market-watchlist").value = settings.marketWatchlist;
+  document.querySelector("#topic-watchlist").value = settings.topicWatchlist;
+  document.querySelector("#home-region").value = settings.homeRegion;
+  renderPreferenceSummary();
   renderReadiness();
   renderIntegrationPlan();
+}
+
+function renderPreferenceChips(label, value) {
+  const items = splitList(value);
+  if (!items.length) {
+    return `
+      <div class="preference-group">
+        <strong>${label}</strong>
+        <span class="empty-chip">Not saved yet</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="preference-group">
+      <strong>${label}</strong>
+      <div class="chip-row">${items.map((item) => `<span class="chip">${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+  `;
+}
+
+function renderPreferenceSummary() {
+  preferenceSummary.innerHTML = `
+    ${renderPreferenceChips("Teams", settings.favoriteTeams)}
+    ${renderPreferenceChips("Watchlist", settings.marketWatchlist)}
+    ${renderPreferenceChips("Topics", settings.topicWatchlist)}
+    <div class="preference-group">
+      <strong>Region</strong>
+      <span class="chip">${escapeHtml(settings.homeRegion || "Not saved yet")}</span>
+    </div>
+  `;
+}
+
+function collectSettingsFromForm() {
+  return {
+    openaiApiKey: document.querySelector("#openai-api-key").value.trim(),
+    newsSource: document.querySelector("#news-source").value.trim(),
+    marketSource: document.querySelector("#market-source").value.trim(),
+    sportsSource: document.querySelector("#sports-source").value.trim(),
+    modelName: document.querySelector("#model-name").value.trim(),
+    tone: document.querySelector("#tone-setting").value,
+    length: document.querySelector("#length-setting").value,
+    citations: document.querySelector("#citations-setting").checked,
+    alerts: document.querySelector("#alerts-setting").checked,
+    favoriteTeams: document.querySelector("#favorite-teams").value.trim(),
+    marketWatchlist: document.querySelector("#market-watchlist").value.trim(),
+    topicWatchlist: document.querySelector("#topic-watchlist").value.trim(),
+    homeRegion: document.querySelector("#home-region").value.trim(),
+  };
+}
+
+function wirePreferenceAutosave() {
+  const fields = ["#favorite-teams", "#market-watchlist", "#topic-watchlist", "#home-region"];
+  let autosaveTimer;
+  fields.forEach((selector) => {
+    document.querySelector(selector).addEventListener("input", () => {
+      settings = collectSettingsFromForm();
+      renderPreferenceSummary();
+      renderIntegrationPlan();
+      window.clearTimeout(autosaveTimer);
+      autosaveTimer = window.setTimeout(() => saveSettings(), 500);
+    });
+  });
 }
 
 function renderReadiness() {
@@ -696,6 +788,7 @@ function renderReadiness() {
     { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} Federal Register items loaded.` : "Use Load Live Politics or add a custom endpoint.", state: liveData.politics.length ? "ready" : "missing" },
     { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded.` : "Use Load Live Sports or add a sports source.", state: liveData.sports.length ? "ready" : settings.sportsSource ? "partial" : "missing" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
+    { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },
   ];
   readinessList.innerHTML = checks.map((check) => `
     <div class="readiness-item">
@@ -707,8 +800,14 @@ function renderReadiness() {
 
 function renderIntegrationPlan() {
   const modelName = escapeHtml(settings.modelName || "the selected model");
+  const watchedItems = [
+    ...splitList(settings.favoriteTeams),
+    ...splitList(settings.marketWatchlist),
+    ...splitList(settings.topicWatchlist),
+  ].slice(0, 6);
   const steps = [
-    ["Ingest", "Connect the saved endpoints and normalize each item into title, time, source, topic, and confidence fields."],
+    ["Ingest", "Connect saved endpoints and normalize each item into title, time, source, topic, and confidence fields."],
+    ["Personalize", watchedItems.length ? `Prioritize ${watchedItems.join(", ")} when ranking briefs and alerts.` : "Save teams, tickers, and topics to personalize ranking."],
     ["Rank", "Score items by urgency, reliability, user relevance, and expected impact across news, economics, politics, and sports."],
     ["Summarize", `Use ${modelName} through the OpenAI Responses API with the saved tone, length, and citation requirements.`],
     ["Deliver", "Send briefs into chat first, then promote recurring monitors into scheduled jobs or notifications."],
@@ -807,21 +906,12 @@ document.querySelector("#reset-tasks-button").addEventListener("click", async ()
   addMessage("ai", "Automation defaults restored.");
 });
 document.querySelector("#save-settings-button").addEventListener("click", async () => {
-  settings = {
-    openaiApiKey: document.querySelector("#openai-api-key").value.trim(),
-    newsSource: document.querySelector("#news-source").value.trim(),
-    marketSource: document.querySelector("#market-source").value.trim(),
-    sportsSource: document.querySelector("#sports-source").value.trim(),
-    modelName: document.querySelector("#model-name").value.trim(),
-    tone: document.querySelector("#tone-setting").value,
-    length: document.querySelector("#length-setting").value,
-    citations: document.querySelector("#citations-setting").checked,
-    alerts: document.querySelector("#alerts-setting").checked,
-  };
+  settings = collectSettingsFromForm();
   await saveSettings();
+  renderPreferenceSummary();
   renderReadiness();
   renderIntegrationPlan();
-  addMessage("ai", settings.openaiApiKey ? "Settings saved. Live AI chat is now enabled for new messages." : "Settings saved. Add an OpenAI API key when you want live AI answers.");
+  addMessage("ai", settings.openaiApiKey ? "Settings saved. Live AI chat and personalization are enabled for new messages." : "Settings saved. Your preferences are stored in the browser database; add an OpenAI API key when you want live AI answers.");
 });
 
 async function initializeApp() {
@@ -834,6 +924,7 @@ async function initializeApp() {
   renderTasks();
   renderAlertSummary();
   renderSettings();
+  wirePreferenceAutosave();
   addMessage("ai", "Welcome to TRUMP AI. I can draft briefings, plan saved alerts, organize research, and summarize news, economics, politics, and sports from one command center.");
 }
 

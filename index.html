@@ -181,7 +181,7 @@
           <div class="section-header">
             <div>
               <p class="eyebrow">Settings</p>
-              <h3>Source and Model Console</h3>
+              <h3>Preferences and Model Console</h3>
             </div>
             <button id="save-settings-button">Save Settings</button>
           </div>
@@ -218,7 +218,18 @@
               <label class="check-row"><input id="citations-setting" type="checkbox" /> <span>Require citations before making factual claims</span></label>
               <label class="check-row"><input id="alerts-setting" type="checkbox" /> <span>Flag urgent changes in the command center</span></label>
             </article>
+            <article class="settings-panel preference-panel">
+              <h4>My Preferences</h4>
+              <label><span>Favorite teams</span><input id="favorite-teams" type="text" placeholder="Lakers, Yankees, Cowboys, UFC" /></label>
+              <label><span>Market watchlist</span><input id="market-watchlist" type="text" placeholder="SPY, QQQ, BTC, AAPL" /></label>
+              <label><span>Topics</span><input id="topic-watchlist" type="text" placeholder="AI, inflation, elections, boxing, tennis" /></label>
+              <label><span>Home region</span><input id="home-region" type="text" placeholder="United States, New York, global..." /></label>
+            </article>
           </div>
+          <article class="brief-card profile-card">
+            <p class="card-label">Saved Profile</p>
+            <div id="preference-summary" class="preference-summary"></div>
+          </article>
           <article class="brief-card">
             <p class="card-label">Integration Plan</p>
             <div id="integration-plan" class="integration-plan"></div>
