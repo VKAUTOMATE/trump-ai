@@ -101,6 +101,7 @@ const domainPrompts = {
   politics: `Politics mode: stay nonpartisan. Explain policy, institutions, elections, legislation, courts, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
   sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results.`,
   automation: `Automation planning mode: convert user goals into monitors, triggers, cadence, sources, thresholds, and output formats. Be specific about what can run now in this prototype versus what needs a backend scheduler.`,
+  verify: `Verification mode: evaluate the claim cautiously. Break the answer into Claim, What is known, What needs verification, Best sources to check, and Confidence. Do not invent citations. If live source data is missing, say that primary-source checking is required.`,
 };
 
 const DB_NAME = "trump-ai-db";
@@ -346,6 +347,7 @@ function generatePrototypeReply(prompt) {
 
 function classifyPrompt(prompt) {
   const lower = prompt.toLowerCase();
+  if (lower.includes("verify") || lower.includes("fact check") || lower.includes("is this true") || lower.includes("claim")) return "verify";
   if (lower.includes("automation") || lower.includes("task") || lower.includes("alert") || lower.includes("monitor")) return "automation";
   if (lower.includes("economic") || lower.includes("market") || lower.includes("inflation") || lower.includes("fed") || lower.includes("stock") || lower.includes("jobs")) return "economics";
   if (lower.includes("politic") || lower.includes("election") || lower.includes("policy") || lower.includes("congress") || lower.includes("court")) return "politics";
@@ -450,6 +452,7 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       card.className = "data-card";
       card.innerHTML = `
+        <div class="trust-row"><span class="trust-badge analysis">Analysis</span><span>Prototype</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
         <footer><span>${item.source || item.league}</span><span>Ready</span></footer>
@@ -479,6 +482,7 @@ function renderLiveCards(topic, items) {
     </article>
     ${items.map((item) => `
       <article class="data-card live-card">
+        <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${escapeHtml(item.text)}</p>
         <footer>
@@ -558,6 +562,7 @@ function stooqCsvToItem(csv, symbol, label) {
     title: `${label} quote`,
     text: `${date} ${time}: close ${close}, open ${open}, high ${high}, low ${low}, volume ${volume || "n/a"}.`,
     source: `Stooq ${symbolCode || symbol}`,
+    timestamp: `${date} ${time}`,
     url: `https://stooq.com/q/?s=${symbol}`,
   };
 }
@@ -574,6 +579,7 @@ function blsSeriesToItems(data) {
       title: labels[series.seriesID] || series.seriesID,
       text: `${point.periodName || "Latest"} ${point.year || ""}: ${point.value || "n/a"}${point.footnotes?.[0]?.text ? ` (${point.footnotes[0].text})` : ""}.`,
       source: "U.S. Bureau of Labor Statistics",
+      timestamp: `${point.periodName || "Latest"} ${point.year || ""}`.trim(),
       url: "https://www.bls.gov/data/",
     };
   });
@@ -586,6 +592,7 @@ function alphaVantageQuoteToItem(data) {
     title: `${quote["01. symbol"]} stock quote`,
     text: `Price ${quote["05. price"] || "n/a"}, change ${quote["09. change"] || "n/a"} (${quote["10. change percent"] || "n/a"}), previous close ${quote["08. previous close"] || "n/a"}.`,
     source: "Alpha Vantage demo stock API",
+    timestamp: quote["07. latest trading day"] || "Latest",
     url: "https://www.alphavantage.co/documentation/",
   };
 }
@@ -596,6 +603,7 @@ async function loadLiveNews() {
     title: article.title || "Untitled news item",
     text: `${article.seendate || "Recent"} - ${article.domain || "news source"}`,
     source: article.domain || "GDELT",
+    timestamp: article.seendate || "Recent",
     url: article.url,
   }));
 }
@@ -611,6 +619,7 @@ async function loadLiveEconomics() {
         title: `${item.security_desc || "Treasury security"} rate`,
         text: `${item.record_date}: average interest rate ${item.avg_interest_rate_amt || "n/a"}%.`,
         source: "U.S. Treasury Fiscal Data",
+        timestamp: item.record_date,
         url: "https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates",
       }))),
   ];
@@ -629,6 +638,7 @@ async function loadLivePolitics() {
     title: item.title || "Federal Register item",
     text: `${item.publication_date || "Recent"} - ${(item.agencies || []).map((agency) => agency.name).slice(0, 2).join(", ") || "Federal agency"}`,
     source: "Federal Register government data",
+    timestamp: item.publication_date || "Recent",
     url: item.html_url,
   }));
 }
@@ -658,6 +668,7 @@ async function loadLiveSports() {
         title: names || event.name || `${league.label} event`,
         text: `${event.status?.type?.shortDetail || "Scheduled"}${scores ? ` - ${scores}` : ""}`,
         source: `${league.label} scores/schedule`,
+        timestamp: event.date ? new Date(event.date).toLocaleString() : "Schedule",
         url: event.links?.[0]?.href,
       };
     });

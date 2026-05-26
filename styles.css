@@ -368,6 +368,31 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.trust-panel {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--green);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding: 16px;
+}
+
+.trust-panel h4,
+.trust-panel p {
+  margin: 0;
+}
+
+.trust-panel p:last-child {
+  color: var(--muted);
+  line-height: 1.45;
+  margin-top: 5px;
+}
+
 .landing-card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -641,6 +666,37 @@ textarea,
   color: var(--primary-dark);
   font-weight: 800;
   text-decoration: none;
+}
+
+.trust-row {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.trust-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  padding: 5px 8px;
+  text-transform: uppercase;
+}
+
+.trust-badge.fact {
+  background: rgba(22, 128, 91, 0.12);
+  color: var(--green);
+}
+
+.trust-badge.analysis {
+  background: var(--panel-strong);
+  color: var(--primary-dark);
 }
 
 .data-card h4,
@@ -945,7 +1001,8 @@ textarea,
 
   .topbar,
   .section-header,
-  .dashboard-hero {
+  .dashboard-hero,
+  .trust-panel {
     align-items: stretch;
     flex-direction: column;
   }
