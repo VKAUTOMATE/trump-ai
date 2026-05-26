@@ -16,7 +16,10 @@
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark">T</div>
+          <div class="brand-mark" aria-hidden="true">
+            <span>T</span>
+            <small>AI</small>
+          </div>
           <div>
             <p class="eyebrow">Transparent Research Utility</p>
             <h1>TRUMP AI</h1>
@@ -24,13 +27,13 @@
         </div>
 
         <nav class="nav-list" aria-label="Primary">
-          <button class="nav-item active" data-view="command"><span>Command</span><small>Ask anything</small></button>
-          <button class="nav-item" data-view="automation"><span>Automation</span><small>Tasks and alerts</small></button>
-          <button class="nav-item" data-view="news"><span>News</span><small>Briefing desk</small></button>
-          <button class="nav-item" data-view="markets"><span>Economics</span><small>Macro and markets</small></button>
-          <button class="nav-item" data-view="politics"><span>Politics</span><small>Policy tracker</small></button>
-          <button class="nav-item" data-view="sports"><span>Sports</span><small>Scores and storylines</small></button>
-          <button class="nav-item" data-view="settings"><span>Settings</span><small>Data sources</small></button>
+          <button class="nav-item active" data-view="command"><span class="nav-icon">⌁</span><span>Command</span><small>Ask anything</small></button>
+          <button class="nav-item" data-view="automation"><span class="nav-icon">⏱</span><span>Automation</span><small>Tasks and alerts</small></button>
+          <button class="nav-item" data-view="news"><span class="nav-icon">◫</span><span>News</span><small>Briefing desk</small></button>
+          <button class="nav-item" data-view="markets"><span class="nav-icon">▴</span><span>Economics</span><small>Macro and markets</small></button>
+          <button class="nav-item" data-view="politics"><span class="nav-icon">⚖</span><span>Politics</span><small>Policy tracker</small></button>
+          <button class="nav-item" data-view="sports"><span class="nav-icon">●</span><span>Sports</span><small>Scores and storylines</small></button>
+          <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span><small>Data sources</small></button>
         </nav>
 
         <div class="sidebar-card">
@@ -47,8 +50,8 @@
             <h2 id="view-title">Command Center</h2>
           </div>
           <div class="top-actions">
-            <button id="refresh-button" class="icon-button" title="Refresh briefings" aria-label="Refresh briefings">↻</button>
-            <button id="theme-button" class="icon-button" title="Change theme" aria-label="Change theme">◐</button>
+            <button id="refresh-button" class="icon-button" title="Refresh briefings" aria-label="Refresh briefings"><span>↻</span></button>
+            <button id="theme-button" class="icon-button" title="Change theme" aria-label="Change theme"><span>◐</span></button>
           </div>
         </header>
 
@@ -58,7 +61,7 @@
               <div id="chat-log" class="chat-log" aria-live="polite"></div>
               <form id="chat-form" class="chat-form">
                 <input id="chat-input" type="text" autocomplete="off" placeholder="Ask TRUMP AI for a briefing, automation, market note, political summary, or sports update" />
-                <button type="submit">Send</button>
+                <button type="submit"><span class="button-icon">➤</span>Send</button>
               </form>
             </section>
 
@@ -91,12 +94,12 @@
               <p class="eyebrow">Automations</p>
               <h3>Task and Alert Builder</h3>
             </div>
-            <button id="add-task-button">Add Automation</button>
+            <button id="add-task-button"><span class="button-icon">＋</span>Add Automation</button>
           </div>
           <div class="automation-toolbar">
-            <button id="run-alerts-button" class="subtle">Run Check Now</button>
-            <button id="export-tasks-button" class="subtle">Export JSON</button>
-            <button id="reset-tasks-button" class="subtle">Reset Defaults</button>
+            <button id="run-alerts-button" class="subtle"><span class="button-icon">▶</span>Run Check Now</button>
+            <button id="export-tasks-button" class="subtle"><span class="button-icon">⇩</span>Export JSON</button>
+            <button id="reset-tasks-button" class="subtle"><span class="button-icon">↺</span>Reset Defaults</button>
           </div>
           <div id="alert-summary" class="alert-summary"></div>
           <div id="task-list" class="task-list"></div>
@@ -115,7 +118,7 @@
                 <option value="business">Business</option>
                 <option value="technology">Technology</option>
               </select>
-              <button class="live-button" data-live="news">Load Live News</button>
+              <button class="live-button" data-live="news"><span class="button-icon">↯</span>Load Live News</button>
             </div>
           </div>
           <div id="news-live-grid" class="live-grid"></div>
@@ -129,8 +132,8 @@
               <h3>Macro Dashboard</h3>
             </div>
             <div class="section-actions">
-              <button id="simulate-markets">Simulate Update</button>
-              <button class="live-button" data-live="economics">Load Live Economics</button>
+              <button id="simulate-markets"><span class="button-icon">↻</span>Simulate Update</button>
+              <button class="live-button" data-live="economics"><span class="button-icon">↯</span>Load Live Economics</button>
             </div>
           </div>
           <div id="economics-live-grid" class="live-grid"></div>
@@ -145,7 +148,7 @@
             </div>
             <div class="section-actions">
               <span class="badge">Nonpartisan</span>
-              <button class="live-button" data-live="politics">Load Live Politics</button>
+              <button class="live-button" data-live="politics"><span class="button-icon">↯</span>Load Live Politics</button>
             </div>
           </div>
           <div id="politics-live-grid" class="live-grid"></div>
@@ -170,7 +173,7 @@
                 <option value="UFC">UFC</option>
                 <option value="BOXING">Boxing</option>
               </select>
-              <button class="live-button" data-live="sports">Search Live Sports</button>
+              <button class="live-button" data-live="sports"><span class="button-icon">⌕</span>Search Live Sports</button>
             </div>
           </div>
           <p class="section-note">Choose a league, then search live scores and schedules.</p>
@@ -184,7 +187,7 @@
               <p class="eyebrow">Settings</p>
               <h3>Preferences and Model Console</h3>
             </div>
-            <button id="save-settings-button">Save Settings</button>
+            <button id="save-settings-button"><span class="button-icon">✓</span>Save Settings</button>
           </div>
           <div class="settings-grid">
             <article class="settings-panel">

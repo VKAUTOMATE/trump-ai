@@ -230,6 +230,20 @@ function addMessage(role, text) {
   return message;
 }
 
+function setLoadingButton(button, isLoading, label) {
+  if (isLoading) {
+    button.dataset.originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.classList.add("is-loading");
+    button.innerHTML = `<span class="spinner" aria-hidden="true"></span>${label}`;
+    return;
+  }
+  button.disabled = false;
+  button.classList.remove("is-loading");
+  button.innerHTML = button.dataset.originalHtml || button.innerHTML;
+  delete button.dataset.originalHtml;
+}
+
 function generatePrototypeReply(prompt) {
   const lower = prompt.toLowerCase();
   const activeTasks = tasks.filter((task) => task.active).length;
@@ -585,9 +599,9 @@ async function loadLiveData(topic, button) {
     politics: loadLivePolitics,
     sports: loadLiveSports,
   };
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = "Loading...";
+  const container = document.querySelector(`#${topic}-live-grid`);
+  setLoadingButton(button, true, "Loading");
+  container?.classList.add("loading");
   try {
     const items = await loaders[topic]();
     renderLiveCards(topic, items);
@@ -596,8 +610,8 @@ async function loadLiveData(topic, button) {
     renderLiveError(topic, error);
     addMessage("ai", `I could not load live ${topic} data: ${error.message}`);
   } finally {
-    button.disabled = false;
-    button.textContent = originalText;
+    container?.classList.remove("loading");
+    setLoadingButton(button, false);
   }
 }
 
@@ -842,7 +856,7 @@ chatForm.addEventListener("submit", async (event) => {
   chatInput.value = "";
   chatInput.disabled = true;
   const sendButton = chatForm.querySelector("button");
-  sendButton.disabled = true;
+  setLoadingButton(sendButton, true, "Thinking");
   const thinkingMessage = addMessage("ai", settings.openaiApiKey ? "Thinking..." : "API key needed. Add your OpenAI API key in Settings to get real AI answers.");
 
   try {
@@ -855,7 +869,7 @@ chatForm.addEventListener("submit", async (event) => {
     conversationHistory.push({ role: "ai", text: fallback });
   } finally {
     chatInput.disabled = false;
-    sendButton.disabled = false;
+    setLoadingButton(sendButton, false);
     chatInput.focus();
   }
 });
