@@ -27,7 +27,7 @@ const politicsItems = [
 ];
 
 const sportsItems = [
-  { league: "NBA", title: "NBA Nightly Edge", text: "Injuries, rest, matchups, playoff races, and star usage changes." },
+  { league: "NBA", title: "NBA Prospect Watch", text: "Rookies, call-ups, injuries, rotation changes, usage spikes, and development storylines." },
   { league: "NFL", title: "NFL Board", text: "Roster moves, schedule spots, quarterback health, and divisional stakes." },
   { league: "MLB", title: "MLB Diamond Notes", text: "Probable pitchers, bullpen workload, streaks, and weather impact." },
   { league: "NHL", title: "NHL Ice Sheet", text: "Goalie confirmations, special teams, travel, and playoff intensity." },
