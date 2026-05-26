@@ -452,7 +452,7 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge analysis">Analysis</span><span>${escapeHtml(item.timestamp || "Prototype")}</span></div>
+        <div class="trust-row"><span class="trust-badge analysis">Opinion / Analysis</span><span>${escapeHtml(item.timestamp || "Prototype")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
         <footer><span>Source: ${item.source || item.league}</span><span>${item.timestamp || "Ready"}</span></footer>
