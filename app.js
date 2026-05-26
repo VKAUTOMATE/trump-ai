@@ -9,21 +9,21 @@ const views = {
 };
 
 const newsItems = [
-  { category: "world", title: "Global Watch", text: "Track major diplomatic, security, and humanitarian developments with concise context and impact notes.", source: "Briefing model" },
-  { category: "business", title: "Corporate Signals", text: "Summarize earnings, layoffs, mergers, supply chains, and CEO commentary into an executive-ready digest.", source: "Business desk" },
-  { category: "technology", title: "AI and Tech", text: "Monitor product launches, model releases, regulation, chips, cybersecurity, and platform policy changes.", source: "Tech radar" },
-  { category: "business", title: "Energy and Commodities", text: "Connect oil, gas, power, agriculture, metals, and shipping moves to inflation and market pressure.", source: "Macro desk" },
-  { category: "world", title: "Risk Map", text: "Flag countries, regions, and events where policy risk could spill into markets or security planning.", source: "Risk engine" },
-  { category: "technology", title: "Platform Pulse", text: "Watch search, social, streaming, and app store changes that influence media reach and consumer behavior.", source: "Media monitor" },
+  { category: "world", title: "Global Watch", text: "Track major diplomatic, security, and humanitarian developments with concise context and impact notes.", source: "Prototype briefing model", timestamp: "Prototype" },
+  { category: "business", title: "Corporate Signals", text: "Summarize earnings, layoffs, mergers, supply chains, and CEO commentary into an executive-ready digest.", source: "Prototype business desk", timestamp: "Prototype" },
+  { category: "technology", title: "AI and Tech", text: "Monitor product launches, model releases, regulation, chips, cybersecurity, and platform policy changes.", source: "Prototype tech radar", timestamp: "Prototype" },
+  { category: "business", title: "Energy and Commodities", text: "Connect oil, gas, power, agriculture, metals, and shipping moves to inflation and market pressure.", source: "Prototype macro desk", timestamp: "Prototype" },
+  { category: "world", title: "Risk Map", text: "Flag countries, regions, and events where policy risk could spill into markets or security planning.", source: "Prototype risk engine", timestamp: "Prototype" },
+  { category: "technology", title: "Platform Pulse", text: "Watch search, social, streaming, and app store changes that influence media reach and consumer behavior.", source: "Prototype media monitor", timestamp: "Prototype" },
 ];
 
 const politicsItems = [
-  { title: "Policy Calendar", text: "Build weekly summaries of votes, hearings, executive actions, court deadlines, and agency rulemaking.", source: "Civic tracker" },
-  { title: "Election Landscape", text: "Compare polling direction, fundraising, turnout indicators, ballot access, and district-level pressure points.", source: "Elections desk" },
-  { title: "Legislation Monitor", text: "Turn bills and amendments into plain-English summaries with likely winners, losers, and open questions.", source: "Policy parser" },
-  { title: "Public Opinion", text: "Separate headline noise from durable opinion shifts across economy, immigration, health care, and foreign policy.", source: "Sentiment desk" },
-  { title: "Geopolitics", text: "Connect international political developments to trade, defense, supply chains, energy, and financial markets.", source: "Global policy" },
-  { title: "Accountability", text: "Highlight claims that need verification and identify the primary sources needed to check them.", source: "Fact file" },
+  { title: "Policy Calendar", text: "Build weekly summaries of votes, hearings, executive actions, court deadlines, and agency rulemaking.", source: "Prototype civic tracker", timestamp: "Prototype" },
+  { title: "Election Landscape", text: "Compare polling direction, fundraising, turnout indicators, ballot access, and district-level pressure points.", source: "Prototype elections desk", timestamp: "Prototype" },
+  { title: "Legislation Monitor", text: "Turn bills and amendments into plain-English summaries with likely winners, losers, and open questions.", source: "Prototype policy parser", timestamp: "Prototype" },
+  { title: "Public Opinion", text: "Separate headline noise from durable opinion shifts across economy, immigration, health care, and foreign policy.", source: "Prototype sentiment desk", timestamp: "Prototype" },
+  { title: "Geopolitics", text: "Connect international political developments to trade, defense, supply chains, energy, and financial markets.", source: "Prototype global policy", timestamp: "Prototype" },
+  { title: "Accountability", text: "Highlight claims that need verification and identify the primary sources needed to check them.", source: "Prototype fact file", timestamp: "Prototype" },
 ];
 
 const sportsItems = [
@@ -452,10 +452,10 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge analysis">Analysis</span><span>Prototype</span></div>
+        <div class="trust-row"><span class="trust-badge analysis">Analysis</span><span>${escapeHtml(item.timestamp || "Prototype")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
-        <footer><span>${item.source || item.league}</span><span>Ready</span></footer>
+        <footer><span>Source: ${item.source || item.league}</span><span>${item.timestamp || "Ready"}</span></footer>
       `;
       container.append(card);
     });
@@ -472,11 +472,18 @@ function renderLiveCards(topic, items) {
     return;
   }
 
+  const sourceLabels = {
+    news: "GDELT live news API",
+    politics: "Federal Register API",
+    economics: "Alpha Vantage, BLS, U.S. Treasury",
+    sports: "ESPN scoreboard APIs",
+  };
+
   container.innerHTML = `
     <article class="live-summary">
       <div>
         <p class="card-label">Live ${topic}</p>
-        <h4>${items.length} fresh item${items.length === 1 ? "" : "s"} loaded</h4>
+        <h4>${items.length} fresh item${items.length === 1 ? "" : "s"} loaded from ${sourceLabels[topic] || "live source"}</h4>
       </div>
       <span>${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
     </article>
