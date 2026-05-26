@@ -40,14 +40,14 @@ const sportsItems = [
 ];
 
 const marketMetrics = [
-  { label: "Inflation trend", value: "Sticky", tone: "flat", note: "Watch CPI, PCE, wage growth, rents, and energy." },
-  { label: "Labor market", value: "Cooling", tone: "down", note: "Track payrolls, claims, quits, and participation." },
-  { label: "Fed stance", value: "Data-led", tone: "flat", note: "Focus on speeches, minutes, dots, and credit stress." },
-  { label: "Consumer", value: "Mixed", tone: "flat", note: "Retail sales, delinquencies, sentiment, and savings matter." },
-  { label: "Equities", value: "Risk-on", tone: "up", note: "Breadth, earnings revisions, and rates decide durability." },
-  { label: "Dollar", value: "Firm", tone: "up", note: "Rate differentials and global stress drive the move." },
-  { label: "Oil", value: "Volatile", tone: "flat", note: "Supply discipline, demand data, and geopolitics lead." },
-  { label: "Credit", value: "Watch", tone: "down", note: "Spreads and refinancing pressure reveal stress early." },
+  { label: "Inflation trend", value: "Live-ready", tone: "flat", note: "Load live economics to pull CPI, PCE, wage, rent, and energy source data." },
+  { label: "Labor market", value: "Live-ready", tone: "flat", note: "Load live economics to pull payrolls, claims, unemployment, quits, and participation." },
+  { label: "Fed stance", value: "Live-ready", tone: "flat", note: "Load live economics to pull rates, Treasury data, Fed signals, and credit stress." },
+  { label: "Consumer", value: "Live-ready", tone: "flat", note: "Load live economics to pull retail, sentiment, delinquency, and savings context." },
+  { label: "Equities", value: "Live-ready", tone: "flat", note: "Load live economics to pull market quotes, breadth context, and earnings pressure." },
+  { label: "Dollar", value: "Live-ready", tone: "flat", note: "Load live economics to pull rate differentials, dollar strength, and global stress signals." },
+  { label: "Oil", value: "Live-ready", tone: "flat", note: "Load live economics to pull commodity, inflation, and supply-demand signals." },
+  { label: "Credit", value: "Live-ready", tone: "flat", note: "Load live economics to pull spreads, refinancing pressure, and stress indicators." },
 ];
 
 const defaultTasks = [
@@ -469,6 +469,9 @@ function renderLiveCards(topic, items) {
   if (!container) return;
   liveData[topic] = items;
   renderLandingCards();
+  if (topic === "economics") {
+    renderMarketsFromLive(items);
+  }
 
   if (!items.length) {
     container.innerHTML = "";
@@ -517,14 +520,24 @@ function renderLiveError(topic, error) {
   `;
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 async function fetchJson(url) {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetchWithTimeout(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`Source returned ${response.status}`);
   return response.json();
 }
 
 async function fetchText(url) {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetchWithTimeout(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`Source returned ${response.status}`);
   return response.text();
 }
@@ -717,9 +730,32 @@ function renderMarkets() {
     const card = document.createElement("article");
     card.className = "metric-card";
     card.innerHTML = `
+      <div class="trust-row"><span class="trust-badge analysis">Opinion / Analysis</span><span>Prototype</span></div>
       <h4>${metric.label}</h4>
       <span class="metric-value ${metric.tone}">${metric.value}</span>
       <p>${metric.note}</p>
+      <footer><span>Source: prototype monitor</span><span>Load live economics</span></footer>
+    `;
+    container.append(card);
+  });
+}
+
+function renderMarketsFromLive(items) {
+  const container = document.querySelector("#market-grid");
+  if (!container) return;
+  container.innerHTML = "";
+  items.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "metric-card live-metric-card";
+    card.innerHTML = `
+      <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
+      <h4>${escapeHtml(item.title)}</h4>
+      <span class="metric-value up">Live</span>
+      <p>${escapeHtml(item.text)}</p>
+      <footer>
+        <span>${escapeHtml(item.source || "Live economics source")}</span>
+        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
+      </footer>
     `;
     container.append(card);
   });
