@@ -53,10 +53,11 @@ const defaultTasks = [
 ];
 
 const defaultSettings = {
+  openaiApiKey: "",
   newsSource: "",
   marketSource: "",
   sportsSource: "",
-  modelName: "gpt-4.1-mini",
+  modelName: "gpt-5.4-mini",
   tone: "neutral",
   length: "balanced",
   citations: true,
@@ -74,6 +75,16 @@ const integrationPlan = document.querySelector("#integration-plan");
 
 let tasks = (JSON.parse(localStorage.getItem("trump-ai-tasks") || "null") || defaultTasks).map((task) => ({ active: true, ...task }));
 let settings = { ...defaultSettings, ...(JSON.parse(localStorage.getItem("trump-ai-settings") || "null") || {}) };
+const conversationHistory = [];
+
+const domainPrompts = {
+  base: `You are TRUMP AI, a neutral, source-aware research and briefing assistant. You are not Donald Trump and must not impersonate any real person. Be direct, practical, and nonpartisan. If current/live facts are requested and no source data is provided, say what you can infer and what should be verified. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
+  news: `News mode: prioritize verified events, timestamps, source quality, affected people or institutions, and likely second-order impact. Separate confirmed facts from uncertainty. Ask for live source links when needed.`,
+  economics: `Economics mode: explain macro signals, market context, inflation, labor, rates, credit, commodities, and consumer data. Avoid financial advice. Present assumptions, risks, and data that would change the view.`,
+  politics: `Politics mode: stay nonpartisan. Explain policy, institutions, elections, legislation, courts, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
+  sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results.`,
+  automation: `Automation planning mode: convert user goals into monitors, triggers, cadence, sources, thresholds, and output formats. Be specific about what can run now in this prototype versus what needs a backend scheduler.`,
+};
 
 function saveTasks() {
   localStorage.setItem("trump-ai-tasks", JSON.stringify(tasks));
@@ -105,9 +116,10 @@ function addMessage(role, text) {
   message.textContent = text;
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
+  return message;
 }
 
-function generateReply(prompt) {
+function generatePrototypeReply(prompt) {
   const lower = prompt.toLowerCase();
   const activeTasks = tasks.filter((task) => task.active).length;
   const sourceCount = [settings.newsSource, settings.marketSource, settings.sportsSource].filter(Boolean).length;
@@ -132,6 +144,87 @@ function generateReply(prompt) {
     return `News brief: prioritize verified breaking events, business impact, geopolitical risk, technology shifts, and policy consequences. Current profile: ${profile}.`;
   }
   return `I can help with research, automation, news, economics, politics, and sports. I am currently set for ${profile}; connect sources in Settings when you want live data instead of prototype cards.`;
+}
+
+function classifyPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("automation") || lower.includes("task") || lower.includes("alert") || lower.includes("monitor")) return "automation";
+  if (lower.includes("economic") || lower.includes("market") || lower.includes("inflation") || lower.includes("fed") || lower.includes("stock") || lower.includes("jobs")) return "economics";
+  if (lower.includes("politic") || lower.includes("election") || lower.includes("policy") || lower.includes("congress") || lower.includes("court")) return "politics";
+  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("score")) return "sports";
+  if (lower.includes("news") || lower.includes("headline") || lower.includes("brief") || lower.includes("breaking")) return "news";
+  return "base";
+}
+
+function buildSystemPrompt(prompt) {
+  const domain = classifyPrompt(prompt);
+  const profile = `Tone: ${settings.tone}. Depth: ${settings.length}. Citations expected: ${settings.citations ? "yes, when sources are supplied" : "not required"}.`;
+  const sources = [
+    settings.newsSource ? `News source: ${settings.newsSource}` : "News source: not configured",
+    settings.marketSource ? `Market source: ${settings.marketSource}` : "Market source: not configured",
+    settings.sportsSource ? `Sports source: ${settings.sportsSource}` : "Sports source: not configured",
+  ].join("\n");
+  const activeTaskSummary = tasks
+    .filter((task) => task.active)
+    .map((task) => `- ${task.name} (${task.cadence}): ${task.focus}`)
+    .join("\n") || "- No active automations";
+
+  return [
+    domainPrompts.base,
+    domain !== "base" ? domainPrompts[domain] : "",
+    profile,
+    "Current saved data source settings:",
+    sources,
+    "Current active automation context:",
+    activeTaskSummary,
+  ].filter(Boolean).join("\n\n");
+}
+
+function extractResponseText(data) {
+  if (data.output_text) return data.output_text;
+  const chunks = [];
+  (data.output || []).forEach((item) => {
+    (item.content || []).forEach((content) => {
+      if (content.text) chunks.push(content.text);
+    });
+  });
+  return chunks.join("\n").trim();
+}
+
+async function askOpenAI(prompt) {
+  if (!settings.openaiApiKey) {
+    throw new Error("Add your OpenAI API key in Settings first, then save settings and ask again.");
+  }
+
+  const recentHistory = conversationHistory.slice(-8).map((entry) => ({
+    role: entry.role === "ai" ? "assistant" : "user",
+    content: [{ type: "input_text", text: entry.text }],
+  }));
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${settings.openaiApiKey}`,
+    },
+    body: JSON.stringify({
+      model: settings.modelName || defaultSettings.modelName,
+      input: [
+        { role: "developer", content: [{ type: "input_text", text: buildSystemPrompt(prompt) }] },
+        ...recentHistory,
+        { role: "user", content: [{ type: "input_text", text: prompt }] },
+      ],
+      max_output_tokens: settings.length === "deep" ? 1400 : settings.length === "short" ? 450 : 900,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data.error?.message || "The AI request failed. Check your API key, model name, and billing/access settings.";
+    throw new Error(message);
+  }
+
+  return extractResponseText(data) || "I received an empty response from the model.";
 }
 
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
@@ -197,6 +290,7 @@ function renderTasks() {
 }
 
 function renderSettings() {
+  document.querySelector("#openai-api-key").value = settings.openaiApiKey;
   document.querySelector("#news-source").value = settings.newsSource;
   document.querySelector("#market-source").value = settings.marketSource;
   document.querySelector("#sports-source").value = settings.sportsSource;
@@ -211,6 +305,7 @@ function renderSettings() {
 
 function renderReadiness() {
   const checks = [
+    { label: "AI API", detail: settings.openaiApiKey ? `${settings.modelName || defaultSettings.modelName} is ready for live chat responses.` : "Add an OpenAI API key in Settings to replace preset replies.", state: settings.openaiApiKey ? "ready" : "missing" },
     { label: "News pipeline", detail: settings.newsSource ? "Endpoint configured for briefing ingestion." : "Add a news feed or API endpoint.", state: settings.newsSource ? "ready" : "missing" },
     { label: "Market pipeline", detail: settings.marketSource ? "Macro and market source configured." : "Add a market or economics source.", state: settings.marketSource ? "ready" : "missing" },
     { label: "Sports pipeline", detail: settings.sportsSource ? "Scores and league source configured." : "Add a sports schedule or scores source.", state: settings.sportsSource ? "ready" : "missing" },
@@ -229,7 +324,7 @@ function renderIntegrationPlan() {
   const steps = [
     ["Ingest", "Connect the saved endpoints and normalize each item into title, time, source, topic, and confidence fields."],
     ["Rank", "Score items by urgency, reliability, user relevance, and expected impact across news, economics, politics, and sports."],
-    ["Summarize", `Use ${modelName} with the saved tone, length, and citation requirements.`],
+    ["Summarize", `Use ${modelName} through the OpenAI Responses API with the saved tone, length, and citation requirements.`],
     ["Deliver", "Send briefs into chat first, then promote recurring monitors into scheduled jobs or notifications."],
   ];
   integrationPlan.innerHTML = steps.map(([title, detail]) => `
@@ -253,13 +348,31 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
   });
 });
 
-chatForm.addEventListener("submit", (event) => {
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const prompt = chatInput.value.trim();
   if (!prompt) return;
   addMessage("user", prompt);
+  conversationHistory.push({ role: "user", text: prompt });
   chatInput.value = "";
-  window.setTimeout(() => addMessage("ai", generateReply(prompt)), 250);
+  chatInput.disabled = true;
+  const sendButton = chatForm.querySelector("button");
+  sendButton.disabled = true;
+  const thinkingMessage = addMessage("ai", settings.openaiApiKey ? "Thinking..." : "API key needed. Add your OpenAI API key in Settings to get real AI answers.");
+
+  try {
+    const reply = settings.openaiApiKey ? await askOpenAI(prompt) : generatePrototypeReply(prompt);
+    thinkingMessage.textContent = reply;
+    conversationHistory.push({ role: "ai", text: reply });
+  } catch (error) {
+    const fallback = `${error.message}\n\nPrototype fallback: ${generatePrototypeReply(prompt)}`;
+    thinkingMessage.textContent = fallback;
+    conversationHistory.push({ role: "ai", text: fallback });
+  } finally {
+    chatInput.disabled = false;
+    sendButton.disabled = false;
+    chatInput.focus();
+  }
 });
 
 document.querySelector("#theme-button").addEventListener("click", () => document.body.classList.toggle("dark"));
@@ -280,7 +393,8 @@ document.querySelector("#add-task-button").addEventListener("click", () => {
   renderReadiness();
 });
 document.querySelector("#export-tasks-button").addEventListener("click", async () => {
-  const payload = JSON.stringify({ settings, tasks }, null, 2);
+  const { openaiApiKey, ...exportableSettings } = settings;
+  const payload = JSON.stringify({ settings: exportableSettings, tasks }, null, 2);
   if (navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(payload);
@@ -302,6 +416,7 @@ document.querySelector("#reset-tasks-button").addEventListener("click", () => {
 });
 document.querySelector("#save-settings-button").addEventListener("click", () => {
   settings = {
+    openaiApiKey: document.querySelector("#openai-api-key").value.trim(),
     newsSource: document.querySelector("#news-source").value.trim(),
     marketSource: document.querySelector("#market-source").value.trim(),
     sportsSource: document.querySelector("#sports-source").value.trim(),
@@ -314,7 +429,7 @@ document.querySelector("#save-settings-button").addEventListener("click", () => 
   saveSettings();
   renderReadiness();
   renderIntegrationPlan();
-  addMessage("ai", "Settings saved. I updated the readiness panel and integration plan.");
+  addMessage("ai", settings.openaiApiKey ? "Settings saved. Live AI chat is now enabled for new messages." : "Settings saved. Add an OpenAI API key when you want live AI answers.");
 });
 
 refreshBrief();

@@ -165,11 +165,16 @@
           </div>
           <div class="settings-grid">
             <article class="settings-panel">
-              <h4>Connections</h4>
+              <h4>AI Connection</h4>
+              <label><span>OpenAI API key</span><input id="openai-api-key" type="password" autocomplete="off" placeholder="sk-..." /></label>
+              <label><span>Primary model</span><input id="model-name" type="text" placeholder="gpt-5.4-mini" /></label>
+              <p class="settings-note">Your key is saved only in this browser. For a public production app, use a backend proxy instead.</p>
+            </article>
+            <article class="settings-panel">
+              <h4>Live Data Sources</h4>
               <label><span>News source</span><input id="news-source" type="text" placeholder="RSS feed, news API, or search endpoint" /></label>
               <label><span>Market source</span><input id="market-source" type="text" placeholder="Market data API or economics calendar" /></label>
               <label><span>Sports source</span><input id="sports-source" type="text" placeholder="Sports scores API or league feed" /></label>
-              <label><span>Primary model</span><input id="model-name" type="text" placeholder="Model name for summarization" /></label>
             </article>
             <article class="settings-panel">
               <h4>Output Profile</h4>

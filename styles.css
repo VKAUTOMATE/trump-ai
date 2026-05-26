@@ -360,7 +360,8 @@ textarea,
 }
 
 .data-card p,
-.metric-card p {
+.metric-card p,
+.settings-note {
   color: var(--muted);
   line-height: 1.5;
   margin: 0;
