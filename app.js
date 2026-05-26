@@ -840,6 +840,9 @@ function refreshBrief() {
 }
 
 document.querySelectorAll(".nav-item").forEach((item) => item.addEventListener("click", () => setView(item.dataset.view)));
+document.querySelectorAll("[data-jump]").forEach((item) => {
+  item.addEventListener("click", () => setView(item.dataset.jump));
+});
 document.querySelectorAll("[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => {
     chatInput.value = button.dataset.prompt;
