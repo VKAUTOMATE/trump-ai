@@ -95,7 +95,7 @@ const liveData = {
 };
 
 const domainPrompts = {
-  base: `You are TRUMP AI, a neutral, source-aware research and briefing assistant. You are not Donald Trump and must not impersonate any real person. Be direct, practical, and nonpartisan. If current/live facts are requested and no source data is provided, say what you can infer and what should be verified. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
+  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, and briefing system. You are not Donald Trump and must not impersonate any real person. Answer any reasonable user question directly: explain topics, write drafts, plan tasks, summarize information, build automations, verify claims, and connect ideas across news, economics, politics, sports, and general knowledge. Be direct, practical, and nonpartisan. Mark confirmed facts separately from opinion, inference, or analysis. If current/live facts are requested and no source data is provided, say what you can infer and what should be verified. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
   news: `News mode: prioritize verified events, timestamps, source quality, affected people or institutions, and likely second-order impact. Separate confirmed facts from uncertainty. Ask for live source links when needed.`,
   economics: `Economics mode: explain macro signals, market context, inflation, labor, rates, credit, commodities, and consumer data. Avoid financial advice. Present assumptions, risks, and data that would change the view.`,
   politics: `Politics mode: stay nonpartisan. Explain policy, institutions, elections, legislation, courts, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
@@ -324,34 +324,37 @@ function generatePrototypeReply(prompt) {
   const sourceCount = [settings.newsSource, settings.marketSource, settings.sportsSource].filter(Boolean).length;
   const profile = `${settings.tone.replace("-", " ")} tone, ${settings.length} depth, ${settings.citations ? "citations required" : "draft mode"}`;
 
+  if (lower.includes("verify") || lower.includes("fact check") || lower.includes("is this true") || lower.includes("claim")) {
+    return `Verify claim mode:\n\nClaim: ${prompt.replace(/^verify this claim:\s*/i, "") || "Add the claim you want checked."}\n\nWhat is known: I can structure the check and separate fact from opinion.\n\nWhat needs verification: live primary sources, dates, original documents, official data, or reputable reporting.\n\nBest sources to check: official records first, then established news or data providers.\n\nConfidence: limited until live sources or an OpenAI API key are connected.`;
+  }
   if (lower.includes("setting") || lower.includes("source") || lower.includes("api") || lower.includes("connect")) {
     return `Source setup: ${sourceCount}/3 live sources are configured and the primary model is ${settings.modelName || "not set"}. Use Settings to add endpoints, then keep the current ${profile}.`;
   }
   if (lower.includes("automation") || lower.includes("task") || lower.includes("alert")) {
     return `Automation plan: ${activeTasks} monitors are active. Next, choose trigger thresholds, source priority, and output format. Strong defaults are a daily brief, hourly breaking-news triage, weekly macro monitor, and league-specific sports alerts.`;
   }
-  if (lower.includes("economic") || lower.includes("market") || lower.includes("inflation") || lower.includes("fed")) {
+  if (lower.includes("economic") || lower.includes("market") || lower.includes("marknote") || lower.includes("market note") || lower.includes("inflation") || lower.includes("fed")) {
     return `Economics brief: watch inflation persistence, labor cooling, Fed communication, credit spreads, oil volatility, and consumer stress. Market source status: ${settings.marketSource ? "configured" : "needs endpoint"}.`;
   }
   if (lower.includes("politic") || lower.includes("election") || lower.includes("policy")) {
     return "Politics brief: track the policy calendar, legislation, court deadlines, election indicators, fundraising, and public opinion. Keep it nonpartisan and cite primary sources when live data is connected.";
   }
-  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl")) {
-    return "Sports brief: monitor injuries, schedules, rest, roster moves, weather, standings pressure, and matchup edges. Add league filters so every sport has its own fast briefing lane.";
+  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("golf") || lower.includes("tennis") || lower.includes("ufc") || lower.includes("boxing")) {
+    return "Sports brief: monitor injuries, schedules, rest, roster moves, weather, standings pressure, fight cards, tee times, draws, and matchup edges. Use the Sports desk for NBA, NFL, MLB, NHL, golf, tennis, UFC, and boxing.";
   }
   if (lower.includes("news") || lower.includes("brief")) {
     return `News brief: prioritize verified breaking events, business impact, geopolitical risk, technology shifts, and policy consequences. Current profile: ${profile}.`;
   }
-  return `I can help with research, automation, news, economics, politics, and sports. I am currently set for ${profile}; connect sources in Settings when you want live data instead of prototype cards.`;
+  return `Ask-anything mode: I can help explain, write, plan, summarize, brainstorm, or organize this request. Because no OpenAI API key is connected in this browser, this is a prototype answer instead of a full live model response.\n\nBest next step: add your OpenAI API key in Settings, then ask the same question again for a real AI answer. Current profile: ${profile}.`;
 }
 
 function classifyPrompt(prompt) {
   const lower = prompt.toLowerCase();
   if (lower.includes("verify") || lower.includes("fact check") || lower.includes("is this true") || lower.includes("claim")) return "verify";
   if (lower.includes("automation") || lower.includes("task") || lower.includes("alert") || lower.includes("monitor")) return "automation";
-  if (lower.includes("economic") || lower.includes("market") || lower.includes("inflation") || lower.includes("fed") || lower.includes("stock") || lower.includes("jobs")) return "economics";
+  if (lower.includes("economic") || lower.includes("market") || lower.includes("marknote") || lower.includes("market note") || lower.includes("inflation") || lower.includes("fed") || lower.includes("stock") || lower.includes("jobs")) return "economics";
   if (lower.includes("politic") || lower.includes("election") || lower.includes("policy") || lower.includes("congress") || lower.includes("court")) return "politics";
-  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("score")) return "sports";
+  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("golf") || lower.includes("tennis") || lower.includes("ufc") || lower.includes("boxing") || lower.includes("score")) return "sports";
   if (lower.includes("news") || lower.includes("headline") || lower.includes("brief") || lower.includes("breaking")) return "news";
   return "base";
 }

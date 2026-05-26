@@ -113,7 +113,7 @@
             <section class="chat-panel">
               <div id="chat-log" class="chat-log" aria-live="polite"></div>
               <form id="chat-form" class="chat-form">
-                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask TRUMP AI for a briefing, automation, market note, political summary, or sports update" />
+                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask anything: explain, write, plan, verify a claim, build an automation, or create a market note" />
                 <button type="submit"><span class="button-icon">➤</span>Send</button>
               </form>
             </section>
@@ -127,6 +127,8 @@
               <article class="brief-card">
                 <p class="card-label">Quick Prompts</p>
                 <div class="prompt-list">
+                  <button data-prompt="Answer this question: ">Ask anything</button>
+                  <button data-prompt="Verify this claim: ">Verify claim</button>
                   <button data-prompt="Give me a five point news briefing.">News briefing</button>
                   <button data-prompt="Create an automation to watch inflation, jobs, and Fed decisions.">Macro monitor</button>
                   <button data-prompt="Summarize political risks for the week.">Politics risk</button>
