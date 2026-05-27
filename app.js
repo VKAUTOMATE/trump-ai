@@ -36,6 +36,8 @@ const sportsItems = [
   { league: "SOCCER", title: "Soccer Global Watch", text: "Fixtures, scores, tables, injuries, transfers, and top storylines across major soccer leagues." },
   { league: "EPL", title: "Premier League Watch", text: "Fixtures, table pressure, injuries, rotation, form, and title or relegation races." },
   { league: "UCL", title: "Champions League Watch", text: "Group and knockout fixtures, squad news, travel spots, form, and tactical matchups." },
+  { league: "WORLDCUP", title: "World Cup Watch", text: "World Cup fixtures, qualifiers, group stakes, squad news, injuries, and country-level storylines." },
+  { league: "WWC", title: "Women's World Cup Watch", text: "Women's World Cup fixtures, knockout stakes, squad form, injuries, and tournament storylines." },
   { league: "LALIGA", title: "La Liga Watch", text: "Fixtures, standings, injuries, squad rotation, and title or European-place pressure." },
   { league: "SERIEA", title: "Serie A Watch", text: "Fixtures, defensive form, injuries, table movement, and European qualification pressure." },
   { league: "BUNDESLIGA", title: "Bundesliga Watch", text: "Fixtures, pressing matchups, form swings, injuries, and table pressure." },
@@ -608,7 +610,9 @@ function mapSportsLiveToLanes(items = []) {
   const selectedLeague = document.querySelector("#league-filter")?.value || "all";
   const visibleLanes = sportsItems.filter((item) => selectedLeague === "all" || item.league === selectedLeague);
   return visibleLanes.map((lane, index) => {
-    const item = items[index % items.length];
+    const item = items.find((candidate) => candidate.league === lane.league)
+      || (lane.league === "SOCCER" ? items.find((candidate) => ["EPL", "UCL", "WORLDCUP", "WWC", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"].includes(candidate.league)) : null)
+      || items[index % items.length];
     return {
       league: lane.league,
       title: item.title || lane.title,

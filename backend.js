@@ -202,6 +202,7 @@ export async function loadPolitics() {
 
 export async function loadSports(league = "all") {
   const boxingFallback = {
+    league: "BOXING",
     title: "Boxing news and fight watch",
     text: "ESPN boxing scoreboard is unavailable right now, so answer with a boxing monitor instead of asking a follow-up. Cover upcoming title bouts, rankings, weigh-ins, injuries, undercards, promotion announcements, commission updates, and official fight-week changes.",
     source: "Boxing fallback monitor",
@@ -217,6 +218,8 @@ export async function loadSports(league = "all") {
     TENNIS: { url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard", label: "ESPN Tennis" },
     EPL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard", label: "ESPN Premier League" },
     UCL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard", label: "ESPN Champions League" },
+    WORLDCUP: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard", label: "ESPN World Cup" },
+    WWC: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.wwc/scoreboard", label: "ESPN Women's World Cup" },
     LALIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard", label: "ESPN La Liga" },
     SERIEA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard", label: "ESPN Serie A" },
     BUNDESLIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard", label: "ESPN Bundesliga" },
@@ -228,23 +231,26 @@ export async function loadSports(league = "all") {
     UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC" },
     BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing", fallback: boxingFallback },
   };
-  const soccerKeys = ["EPL", "UCL", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
+  const soccerKeys = ["EPL", "UCL", "WORLDCUP", "WWC", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
+  const withKey = (key) => leagues[key] ? { ...leagues[key], key } : null;
   const targets = league === "all"
-    ? Object.values(leagues)
+    ? Object.keys(leagues).map(withKey).filter(Boolean)
     : league === "SOCCER"
-      ? soccerKeys.map((key) => leagues[key])
-      : [leagues[league]].filter(Boolean);
+      ? soccerKeys.map(withKey).filter(Boolean)
+      : [withKey(league)].filter(Boolean);
   const settled = await Promise.allSettled(targets.map((target) => fetchJson(target.url).then((data) => ({ data, target }))));
+  const perSourceLimit = league === "all" ? 1 : 4;
   const items = settled.flatMap((result, index) => {
     if (result.status !== "fulfilled") {
       return targets[index]?.fallback ? [targets[index].fallback] : [];
     }
     const { data, target } = result.value;
-    return (data.events || []).slice(0, 4).map((event) => {
+    return (data.events || []).slice(0, perSourceLimit).map((event) => {
       const competitors = event.competitions?.[0]?.competitors || [];
       const names = competitors.map((team) => team.team?.shortDisplayName || team.team?.displayName).filter(Boolean).join(" vs ");
       const scores = competitors.map((team) => `${team.team?.abbreviation || "TEAM"} ${team.score || "0"}`).join(" | ");
       return {
+        league: target.key,
         title: names || event.name || `${target.label} event`,
         text: `${event.status?.type?.shortDetail || "Scheduled"}${scores ? ` - ${scores}` : ""}`,
         source: `${target.label} scores/schedule`,
@@ -255,7 +261,7 @@ export async function loadSports(league = "all") {
   });
   if (!items.length && league === "BOXING") return [boxingFallback];
   if (!items.length) throw new Error("Sports scoreboards were unavailable.");
-  return items.slice(0, 10);
+  return items.slice(0, 28);
 }
 
 function extractResponseText(data) {
@@ -284,6 +290,7 @@ function classifyChatPrompt(prompt = "") {
   if (/\b(boxing|fight card)\b/.test(lower)) return { topic: "sports", league: "BOXING" };
   if (/\b(epl|premier league)\b/.test(lower)) return { topic: "sports", league: "EPL" };
   if (/\b(champions league|ucl)\b/.test(lower)) return { topic: "sports", league: "UCL" };
+  if (/\b(world cup|fifa world cup|worldcup)\b/.test(lower)) return { topic: "sports", league: "WORLDCUP" };
   if (/\b(soccer|football club|la liga|serie a|bundesliga|ligue 1|mls|liga mx|nwsl|europa)\b/.test(lower)) return { topic: "sports", league: "SOCCER" };
   if (/\b(sports?|scores?|schedule|standings|game|match)\b/.test(lower)) return { topic: "sports", league: "all" };
   if (/\b(politics?|government|federal|agency|agencies|policy|policies|congress|senate|house|court|election|public issue|issues?|regulation|rulemaking)\b/.test(lower)) return { topic: "politics" };
