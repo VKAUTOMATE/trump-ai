@@ -202,8 +202,8 @@ export async function loadPolitics() {
 
 export async function loadSports(league = "all") {
   const boxingFallback = {
-    title: "Boxing fight watch",
-    text: "ESPN boxing scoreboard is unavailable right now. Track upcoming title bouts, rankings, weigh-ins, injuries, undercards, and official commission updates.",
+    title: "Boxing news and fight watch",
+    text: "ESPN boxing scoreboard is unavailable right now, so answer with a boxing monitor instead of asking a follow-up. Cover upcoming title bouts, rankings, weigh-ins, injuries, undercards, promotion announcements, commission updates, and official fight-week changes.",
     source: "Boxing fallback monitor",
     timestamp: new Date().toLocaleString(),
     url: "https://www.espn.com/boxing/",

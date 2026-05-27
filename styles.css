@@ -560,6 +560,7 @@ button:disabled {
 }
 
 .chat-form {
+  align-items: center;
   border-top: 1px solid var(--line);
   display: grid;
   gap: 10px;
@@ -575,8 +576,18 @@ textarea,
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
+  height: 42px;
+  line-height: 1.2;
+  max-height: 42px;
   min-height: 38px;
   padding: 8px 11px;
+}
+
+.chat-form button {
+  align-self: center;
+  height: 42px;
+  min-height: 42px;
+  white-space: nowrap;
 }
 
 .brief-stack {
@@ -1061,11 +1072,11 @@ textarea,
   }
 
   .chat-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .chat-panel {
-    min-height: 520px;
+    min-height: 340px;
   }
 
   .chat-log {
@@ -1086,6 +1097,6 @@ textarea,
   }
 
   .chat-panel {
-    grid-template-rows: minmax(360px, 56vh) auto;
+    grid-template-rows: minmax(220px, 32vh) auto;
   }
 }
