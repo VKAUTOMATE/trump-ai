@@ -510,8 +510,8 @@ button:disabled {
 
 .command-grid {
   display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
 }
 
 .chat-panel,
@@ -527,23 +527,24 @@ button:disabled {
 
 .chat-panel {
   display: grid;
-  grid-template-rows: minmax(430px, 58vh) auto;
-  min-height: 560px;
+  grid-template-rows: minmax(240px, 34vh) auto;
+  min-height: 340px;
 }
 
 .chat-log {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   overflow: auto;
-  padding: 18px;
+  padding: 14px;
 }
 
 .message {
   border-radius: 8px;
-  line-height: 1.55;
-  max-width: 760px;
-  padding: 13px 15px;
+  font-size: 14px;
+  line-height: 1.45;
+  max-width: 640px;
+  padding: 10px 12px;
 }
 
 .message.ai {
@@ -561,9 +562,9 @@ button:disabled {
 .chat-form {
   border-top: 1px solid var(--line);
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding: 14px;
+  padding: 10px;
 }
 
 .chat-form input,
@@ -574,8 +575,8 @@ textarea,
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 38px;
+  padding: 8px 11px;
 }
 
 .brief-stack {
