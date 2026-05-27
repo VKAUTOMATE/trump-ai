@@ -252,10 +252,24 @@ function extractResponseText(data) {
   return (data.output || []).flatMap((item) => item.content || []).map((content) => content.text || "").join("\n").trim();
 }
 
+function historyToText(history = []) {
+  return history.slice(-8).map((item) => {
+    const role = item.role === "assistant" ? "Assistant" : "User";
+    const text = (item.content || []).map((content) => content.text || "").join(" ").trim();
+    return text ? `${role}: ${text}` : "";
+  }).filter(Boolean).join("\n");
+}
+
 export async function chat(body) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("The backend needs OPENAI_API_KEY before real AI answers are enabled.");
   }
+  const conversation = historyToText(body.history);
+  const input = [
+    body.systemPrompt || "You are TRUMP AI, a neutral general assistant.",
+    conversation ? `Recent conversation:\n${conversation}` : "",
+    `User question:\n${body.prompt || ""}`,
+  ].filter(Boolean).join("\n\n");
   const response = await fetchJson("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -264,11 +278,7 @@ export async function chat(body) {
     },
     body: JSON.stringify({
       model: normalizeModelName(body.modelName),
-      input: [
-        { role: "developer", content: [{ type: "input_text", text: body.systemPrompt || "You are TRUMP AI, a neutral research assistant." }] },
-        ...(body.history || []),
-        { role: "user", content: [{ type: "input_text", text: body.prompt || "" }] },
-      ],
+      input,
       max_output_tokens: body.maxOutputTokens || 900,
     }),
   });
