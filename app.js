@@ -256,54 +256,67 @@ function renderLandingCards() {
   if (!landingLiveGrid) return;
   const activeAlerts = tasks.filter((task) => task.active).length;
   const savedPreferences = splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length + (settings.homeRegion ? 1 : 0);
+  const lastTaskCheck = tasks.map((task) => task.lastChecked).filter(Boolean).slice(-1)[0];
   const cards = [
     {
       icon: "◫",
       label: "News",
-      title: liveData.news.length ? `${liveData.news.length} live headlines` : "Ready for headlines",
-      text: liveData.news[0]?.title || "Load live headlines from the News desk.",
+      title: liveData.news.length ? `${liveData.news.length} live headlines` : "Headlines queued",
+      text: liveData.news[0]?.title || "GDELT news route ready for the next live refresh.",
       action: "news",
       status: liveData.news.length ? "Live" : "Ready",
+      source: liveData.news[0]?.source || "GDELT via backend",
+      time: liveData.news[0]?.timestamp || "Next refresh",
     },
     {
       icon: "▴",
       label: "Economics",
-      title: liveData.economics.length ? `${liveData.economics.length} market signals` : "Stocks and macro",
-      text: liveData.economics[0]?.title || "Load stocks, inflation, jobs, and rates.",
+      title: liveData.economics.length ? `${liveData.economics.length} market signals` : "Macro lanes armed",
+      text: liveData.economics[0]?.title || "Stocks, inflation, labor, Treasury, oil, dollar, and credit are wired.",
       action: "markets",
       status: liveData.economics.length ? "Live" : "Ready",
+      source: liveData.economics[0]?.source || "Yahoo, Stooq, BLS, Treasury",
+      time: liveData.economics[0]?.timestamp || "Next refresh",
     },
     {
       icon: "⚖",
       label: "Politics",
-      title: liveData.politics.length ? `${liveData.politics.length} policy updates` : "Government tracker",
-      text: liveData.politics[0]?.title || "Load Federal Register and policy updates.",
+      title: liveData.politics.length ? `${liveData.politics.length} policy updates` : "Policy feed ready",
+      text: liveData.politics[0]?.title || "Federal Register route ready for agency rules and notices.",
       action: "politics",
       status: liveData.politics.length ? "Live" : "Ready",
+      source: liveData.politics[0]?.source || "Federal Register API",
+      time: liveData.politics[0]?.timestamp || "Next refresh",
     },
     {
       icon: "●",
       label: "Sports",
-      title: liveData.sports.length ? `${liveData.sports.length} score items` : "Scores and schedules",
-      text: liveData.sports[0]?.title || "Search NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, boxing.",
+      title: liveData.sports.length ? `${liveData.sports.length} score items` : "Scoreboard ready",
+      text: liveData.sports[0]?.title || "NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, and boxing are connected.",
       action: "sports",
       status: liveData.sports.length ? "Live" : "Ready",
+      source: liveData.sports[0]?.source || "ESPN scoreboards",
+      time: liveData.sports[0]?.timestamp || "Next refresh",
     },
     {
       icon: "⏱",
       label: "Automation",
       title: `${activeAlerts} active alerts`,
-      text: "Saved schedules, triggers, email/text routes, and IndexedDB storage.",
+      text: tasks.find((task) => task.active)?.focus || "Saved schedules, triggers, email/text routes, and browser database storage.",
       action: "automation",
       status: activeAlerts ? "Armed" : "Setup",
+      source: "IndexedDB alerts",
+      time: lastTaskCheck || "Waiting for run",
     },
     {
       icon: "⚙",
       label: "Profile",
       title: `${savedPreferences} saved preferences`,
-      text: settings.homeRegion || settings.favoriteTeams || "Add teams, tickers, topics, and region.",
+      text: settings.homeRegion || settings.favoriteTeams || settings.marketWatchlist || "Add teams, tickers, topics, and region.",
       action: "settings",
       status: savedPreferences ? "Saved" : "Setup",
+      source: "Personal profile",
+      time: savedPreferences ? "Saved in browser" : "Not configured",
     },
   ];
 
@@ -316,6 +329,10 @@ function renderLandingCards() {
       <p class="card-label">${card.label}</p>
       <h4>${escapeHtml(card.title)}</h4>
       <p>${escapeHtml(card.text)}</p>
+      <div class="dashboard-source-row">
+        <span>${escapeHtml(card.source)}</span>
+        <strong>${escapeHtml(card.time)}</strong>
+      </div>
     </article>
   `).join("");
 
