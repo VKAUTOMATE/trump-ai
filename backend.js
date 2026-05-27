@@ -1,8 +1,8 @@
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 function normalizeModelName(modelName) {
   const value = (modelName || "").trim();
-  if (!value || value === "gpt-5.4-mini") return OPENAI_MODEL;
+  if (!value || value === "gpt-5.4-mini" || value === "gpt-5-mini") return OPENAI_MODEL;
   return value;
 }
 
@@ -248,6 +248,7 @@ export async function loadSports(league = "all") {
 }
 
 function extractResponseText(data) {
+  if (data.choices?.[0]?.message?.content) return data.choices[0].message.content;
   if (data.output_text) return data.output_text;
   return (data.output || []).flatMap((item) => item.content || []).map((content) => content.text || "").join("\n").trim();
 }
@@ -264,13 +265,15 @@ export async function chat(body) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("The backend needs OPENAI_API_KEY before real AI answers are enabled.");
   }
-  const conversation = historyToText(body.history);
-  const input = [
-    body.systemPrompt || "You are TRUMP AI, a neutral general assistant.",
-    conversation ? `Recent conversation:\n${conversation}` : "",
-    `User question:\n${body.prompt || ""}`,
-  ].filter(Boolean).join("\n\n");
-  const response = await fetchJson("https://api.openai.com/v1/responses", {
+  const messages = [
+    { role: "system", content: body.systemPrompt || "You are TRUMP AI, a neutral general assistant." },
+    ...(body.history || []).slice(-8).map((item) => ({
+      role: item.role === "assistant" ? "assistant" : "user",
+      content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
+    })).filter((item) => item.content),
+    { role: "user", content: body.prompt || "" },
+  ];
+  const response = await fetchJson("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -278,8 +281,8 @@ export async function chat(body) {
     },
     body: JSON.stringify({
       model: normalizeModelName(body.modelName),
-      input,
-      max_output_tokens: body.maxOutputTokens || 900,
+      messages,
+      max_tokens: body.maxOutputTokens || 900,
     }),
   });
   return { text: extractResponseText(response) || "I received an empty response from the model." };
