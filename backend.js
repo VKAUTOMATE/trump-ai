@@ -201,6 +201,13 @@ export async function loadPolitics() {
 }
 
 export async function loadSports(league = "all") {
+  const boxingFallback = {
+    title: "Boxing fight watch",
+    text: "ESPN boxing scoreboard is unavailable right now. Track upcoming title bouts, rankings, weigh-ins, injuries, undercards, and official commission updates.",
+    source: "Boxing fallback monitor",
+    timestamp: new Date().toLocaleString(),
+    url: "https://www.espn.com/boxing/",
+  };
   const leagues = {
     NBA: { url: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard", label: "ESPN NBA" },
     NFL: { url: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", label: "ESPN NFL" },
@@ -219,7 +226,7 @@ export async function loadSports(league = "all") {
     NWSL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.nwsl/scoreboard", label: "ESPN NWSL" },
     UEL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard", label: "ESPN Europa League" },
     UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC" },
-    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing" },
+    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing", fallback: boxingFallback },
   };
   const soccerKeys = ["EPL", "UCL", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
   const targets = league === "all"
@@ -228,8 +235,10 @@ export async function loadSports(league = "all") {
       ? soccerKeys.map((key) => leagues[key])
       : [leagues[league]].filter(Boolean);
   const settled = await Promise.allSettled(targets.map((target) => fetchJson(target.url).then((data) => ({ data, target }))));
-  const items = settled.flatMap((result) => {
-    if (result.status !== "fulfilled") return [];
+  const items = settled.flatMap((result, index) => {
+    if (result.status !== "fulfilled") {
+      return targets[index]?.fallback ? [targets[index].fallback] : [];
+    }
     const { data, target } = result.value;
     return (data.events || []).slice(0, 4).map((event) => {
       const competitors = event.competitions?.[0]?.competitors || [];
@@ -244,6 +253,7 @@ export async function loadSports(league = "all") {
       };
     });
   });
+  if (!items.length && league === "BOXING") return [boxingFallback];
   if (!items.length) throw new Error("Sports scoreboards were unavailable.");
   return items.slice(0, 10);
 }
