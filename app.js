@@ -516,6 +516,9 @@ function renderLiveCards(topic, items) {
   if (topic === "news") {
     renderCards("#news-grid", mapNewsLiveToLanes(items));
   }
+  if (topic === "sports") {
+    renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
+  }
   if (topic === "economics") {
     renderMarketsFromLive(items);
   }
@@ -594,6 +597,23 @@ function mapNewsLiveToLanes(items = []) {
       title: item.title || lane.title,
       text: item.text || "Live news item loaded from the backend.",
       source: item.source || lane.source,
+      timestamp: item.timestamp || "Live",
+      url: item.url,
+    };
+  });
+}
+
+function mapSportsLiveToLanes(items = []) {
+  if (!items.length) return sportsItems;
+  const selectedLeague = document.querySelector("#league-filter")?.value || "all";
+  const visibleLanes = sportsItems.filter((item) => selectedLeague === "all" || item.league === selectedLeague);
+  return visibleLanes.map((lane, index) => {
+    const item = items[index % items.length];
+    return {
+      league: lane.league,
+      title: item.title || lane.title,
+      text: item.text || "Live sports item loaded from the backend.",
+      source: item.source || `${lane.league} live source`,
       timestamp: item.timestamp || "Live",
       url: item.url,
     };
