@@ -261,12 +261,68 @@ function historyToText(history = []) {
   }).filter(Boolean).join("\n");
 }
 
+function classifyChatPrompt(prompt = "") {
+  const lower = prompt.toLowerCase();
+  if (/\b(nba|basketball)\b/.test(lower)) return { topic: "sports", league: "NBA" };
+  if (/\b(nfl|football)\b/.test(lower)) return { topic: "sports", league: "NFL" };
+  if (/\b(mlb|baseball)\b/.test(lower)) return { topic: "sports", league: "MLB" };
+  if (/\b(nhl|hockey)\b/.test(lower)) return { topic: "sports", league: "NHL" };
+  if (/\b(golf|pga)\b/.test(lower)) return { topic: "sports", league: "GOLF" };
+  if (/\b(tennis|atp|wta)\b/.test(lower)) return { topic: "sports", league: "TENNIS" };
+  if (/\b(ufc|mma)\b/.test(lower)) return { topic: "sports", league: "UFC" };
+  if (/\b(boxing|fight card)\b/.test(lower)) return { topic: "sports", league: "BOXING" };
+  if (/\b(epl|premier league)\b/.test(lower)) return { topic: "sports", league: "EPL" };
+  if (/\b(champions league|ucl)\b/.test(lower)) return { topic: "sports", league: "UCL" };
+  if (/\b(soccer|football club|la liga|serie a|bundesliga|ligue 1|mls|liga mx|nwsl|europa)\b/.test(lower)) return { topic: "sports", league: "SOCCER" };
+  if (/\b(sports?|scores?|schedule|standings|game|match)\b/.test(lower)) return { topic: "sports", league: "all" };
+  if (/\b(politics?|government|federal|agency|agencies|policy|policies|congress|senate|house|court|election|public issue|issues?|regulation|rulemaking)\b/.test(lower)) return { topic: "politics" };
+  if (/\b(economy|economic|markets?|stocks?|inflation|jobs|fed|rates?|treasury|oil|credit)\b/.test(lower)) return { topic: "economics" };
+  if (/\b(news|headlines?|breaking|latest|today)\b/.test(lower)) return { topic: "news" };
+  return { topic: "general" };
+}
+
+function formatLiveContext(label, items = []) {
+  if (!items.length) return "";
+  return [
+    `${label} live context:`,
+    ...items.slice(0, 8).map((item, index) => (
+      `${index + 1}. ${item.title || "Untitled"} - ${item.text || ""} Source: ${item.source || "live source"} Time: ${item.timestamp || "latest"}${item.url ? ` URL: ${item.url}` : ""}`
+    )),
+  ].join("\n");
+}
+
+async function buildBackendLiveContext(prompt = "") {
+  const intent = classifyChatPrompt(prompt);
+  const requests = [];
+  if (intent.topic === "sports") requests.push(["Sports", loadSports(intent.league)]);
+  if (intent.topic === "politics") {
+    requests.push(["Government and politics", loadPolitics()]);
+    requests.push(["Related headlines", loadNews()]);
+  }
+  if (intent.topic === "economics") requests.push(["Economics and markets", loadEconomics()]);
+  if (intent.topic === "news") requests.push(["News", loadNews()]);
+  if (!requests.length) return "";
+
+  const settled = await Promise.allSettled(requests.map(([, request]) => request));
+  const sections = settled.map((result, index) => {
+    const [label] = requests[index];
+    if (result.status === "fulfilled") return formatLiveContext(label, result.value);
+    return `${label} live context unavailable: ${result.reason?.message || "source did not respond"}`;
+  }).filter(Boolean);
+
+  return [
+    "Use this backend-fetched live context when relevant. Do not claim it covers everything; mention source limits when needed.",
+    ...sections,
+  ].join("\n\n");
+}
+
 export async function chat(body) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("The backend needs OPENAI_API_KEY before real AI answers are enabled.");
   }
+  const backendLiveContext = await buildBackendLiveContext(body.prompt || "");
   const messages = [
-    { role: "system", content: body.systemPrompt || "You are TRUMP AI, a neutral general assistant." },
+    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", backendLiveContext].filter(Boolean).join("\n\n") },
     ...(body.history || []).slice(-8).map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
