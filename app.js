@@ -534,6 +534,19 @@ function renderLiveCards(topic, items) {
     container.innerHTML = "";
     return;
   }
+  if (topic === "sports") {
+    container.innerHTML = `
+      <article class="live-summary">
+        <div>
+          <p class="card-label">Live sports</p>
+          <h4>${items.length} live score and schedule item${items.length === 1 ? "" : "s"} applied to the watch cards below</h4>
+        </div>
+        <span>${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+      </article>
+    `;
+    renderReadiness();
+    return;
+  }
 
   const sourceLabels = {
     news: "GDELT live news API",
@@ -609,10 +622,17 @@ function mapSportsLiveToLanes(items = []) {
   if (!items.length) return sportsItems;
   const selectedLeague = document.querySelector("#league-filter")?.value || "all";
   const visibleLanes = sportsItems.filter((item) => selectedLeague === "all" || item.league === selectedLeague);
-  return visibleLanes.map((lane, index) => {
+  return visibleLanes.map((lane) => {
     const item = items.find((candidate) => candidate.league === lane.league)
       || (lane.league === "SOCCER" ? items.find((candidate) => ["EPL", "UCL", "WORLDCUP", "WWC", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"].includes(candidate.league)) : null)
-      || items[index % items.length];
+      || null;
+    if (!item) {
+      return {
+        ...lane,
+        source: `${lane.league} source lane`,
+        timestamp: "No live item in this refresh",
+      };
+    }
     return {
       league: lane.league,
       title: item.title || lane.title,
