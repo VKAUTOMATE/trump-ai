@@ -57,6 +57,7 @@ const defaultTasks = [
 ];
 
 const defaultSettings = {
+  backendApiUrl: "",
   openaiApiKey: "",
   newsSource: "",
   marketSource: "",
@@ -93,6 +94,23 @@ const liveData = {
   politics: [],
   sports: [],
 };
+
+function getApiBase() {
+  return (settings.backendApiUrl || "").trim().replace(/\/$/, "");
+}
+
+async function fetchBackendJson(path, options = {}) {
+  const response = await fetch(`${getApiBase()}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Backend returned ${response.status}`);
+  return data;
+}
 
 const domainPrompts = {
   base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, and briefing system. You are not Donald Trump and must not impersonate any real person. Answer any reasonable user question directly: explain topics, write drafts, plan tasks, summarize information, build automations, verify claims, and connect ideas across news, economics, politics, sports, and general knowledge. Be direct, practical, and nonpartisan. Mark confirmed facts separately from opinion, inference, or analysis. If current/live facts are requested and no source data is provided, say what you can infer and what should be verified. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
@@ -411,39 +429,23 @@ function extractResponseText(data) {
 }
 
 async function askOpenAI(prompt) {
-  if (!settings.openaiApiKey) {
-    throw new Error("Add your OpenAI API key in Settings first, then save settings and ask again.");
-  }
-
   const recentHistory = conversationHistory.slice(-8).map((entry) => ({
     role: entry.role === "ai" ? "assistant" : "user",
     content: [{ type: "input_text", text: entry.text }],
   }));
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const data = await fetchBackendJson("/api/chat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${settings.openaiApiKey}`,
-    },
     body: JSON.stringify({
-      model: settings.modelName || defaultSettings.modelName,
-      input: [
-        { role: "developer", content: [{ type: "input_text", text: buildSystemPrompt(prompt) }] },
-        ...recentHistory,
-        { role: "user", content: [{ type: "input_text", text: prompt }] },
-      ],
-      max_output_tokens: settings.length === "deep" ? 1400 : settings.length === "short" ? 450 : 900,
+      prompt,
+      history: recentHistory,
+      systemPrompt: buildSystemPrompt(prompt),
+      modelName: settings.modelName || defaultSettings.modelName,
+      maxOutputTokens: settings.length === "deep" ? 1400 : settings.length === "short" ? 450 : 900,
     }),
   });
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = data.error?.message || "The AI request failed. Check your API key, model name, and billing/access settings.";
-    throw new Error(message);
-  }
-
-  return extractResponseText(data) || "I received an empty response from the model.";
+  return data.text || "I received an empty response from the backend.";
 }
 
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
@@ -521,225 +523,21 @@ function renderLiveError(topic, error) {
   `;
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    window.clearTimeout(timeout);
-  }
-}
-
-async function fetchJson(url) {
-  const response = await fetchWithTimeout(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Source returned ${response.status}`);
-  return response.json();
-}
-
-async function fetchText(url) {
-  const response = await fetchWithTimeout(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Source returned ${response.status}`);
-  return response.text();
-}
-
-function proxyUrl(url) {
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-}
-
-function proxyUrls(url) {
-  return [
-    url,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-  ];
-}
-
-async function fetchTextWithProxyFallback(url) {
-  let lastError;
-  for (const target of proxyUrls(url)) {
-    try {
-      return await fetchText(target);
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError || new Error("Source unavailable");
-}
-
-async function fetchJsonWithProxyFallback(url) {
-  let lastError;
-  for (const target of proxyUrls(url)) {
-    try {
-      return await fetchJson(target);
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError || new Error("Source unavailable");
-}
-
-async function fetchBlsSeries() {
-  const seriesIds = ["CUSR0000SA0", "CES0000000001", "LNS14000000"];
-  const settled = await Promise.allSettled(seriesIds.map((seriesId) => (
-    fetchJsonWithProxyFallback(`https://api.bls.gov/publicAPI/v2/timeseries/data/${seriesId}?latest=true`)
-  )));
-  return {
-    Results: {
-      series: settled.flatMap((result) => {
-        if (result.status !== "fulfilled") return [];
-        return result.value.Results?.series || [];
-      }),
-    },
-  };
-}
-
-function stooqCsvToItem(csv, symbol, label) {
-  const [, row] = csv.trim().split(/\r?\n/);
-  if (!row) throw new Error(`No market row for ${symbol}`);
-  const [symbolCode, date, time, open, high, low, close, volume] = row.split(",");
-  return {
-    title: `${label} quote`,
-    text: `${date} ${time}: close ${close}, open ${open}, high ${high}, low ${low}, volume ${volume || "n/a"}.`,
-    source: `Stooq ${symbolCode || symbol}`,
-    timestamp: `${date} ${time}`,
-    url: `https://stooq.com/q/?s=${symbol}`,
-  };
-}
-
-function blsSeriesToItems(data) {
-  const labels = {
-    CUSR0000SA0: "Inflation CPI",
-    CES0000000001: "Jobs payroll employment",
-    LNS14000000: "Unemployment rate",
-  };
-  return (data.Results?.series || []).map((series) => {
-    const point = series.data?.[0] || {};
-    return {
-      title: labels[series.seriesID] || series.seriesID,
-      text: `${point.periodName || "Latest"} ${point.year || ""}: ${point.value || "n/a"}${point.footnotes?.[0]?.text ? ` (${point.footnotes[0].text})` : ""}.`,
-      source: "U.S. Bureau of Labor Statistics",
-      timestamp: `${point.periodName || "Latest"} ${point.year || ""}`.trim(),
-      url: "https://www.bls.gov/data/",
-    };
-  });
-}
-
-function alphaVantageQuoteToItem(data) {
-  const quote = data["Global Quote"] || {};
-  if (!quote["01. symbol"]) throw new Error("No Alpha Vantage quote returned");
-  return {
-    title: `${quote["01. symbol"]} stock quote`,
-    text: `Price ${quote["05. price"] || "n/a"}, change ${quote["09. change"] || "n/a"} (${quote["10. change percent"] || "n/a"}), previous close ${quote["08. previous close"] || "n/a"}.`,
-    source: "Alpha Vantage demo stock API",
-    timestamp: quote["07. latest trading day"] || "Latest",
-    url: "https://www.alphavantage.co/documentation/",
-  };
-}
-
-function yahooChartToItem(data, symbol, label) {
-  const result = data.chart?.result?.[0];
-  const quote = result?.meta || {};
-  const close = quote.regularMarketPrice ?? quote.previousClose ?? "n/a";
-  const previous = quote.previousClose ?? "n/a";
-  const time = quote.regularMarketTime ? new Date(quote.regularMarketTime * 1000).toLocaleString() : "Latest";
-  if (!result || close === "n/a") throw new Error(`No Yahoo market row for ${symbol}`);
-  return {
-    title: `${label} market quote`,
-    text: `${time}: price ${close}, previous close ${previous}, exchange ${quote.exchangeName || "n/a"}.`,
-    source: `Yahoo Finance ${symbol}`,
-    timestamp: time,
-    url: `https://finance.yahoo.com/quote/${symbol}`,
-  };
-}
-
 async function loadLiveNews() {
-  const data = await fetchJson("https://api.gdeltproject.org/api/v2/doc/doc?query=breaking%20news&mode=ArtList&format=json&maxrecords=6&sort=HybridRel");
-  return (data.articles || []).slice(0, 6).map((article) => ({
-    title: article.title || "Untitled news item",
-    text: `${article.seendate || "Recent"} - ${article.domain || "news source"}`,
-    source: article.domain || "GDELT",
-    timestamp: article.seendate || "Recent",
-    url: article.url,
-  }));
+  return (await fetchBackendJson("/api/live/news")).items || [];
 }
 
 async function loadLiveEconomics() {
-  const requests = [
-    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1d&interval=1m").then((data) => yahooChartToItem(data, "SPY", "S&P 500 ETF")),
-    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/UUP?range=1d&interval=1m").then((data) => yahooChartToItem(data, "UUP", "U.S. Dollar ETF")),
-    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/USO?range=1d&interval=1m").then((data) => yahooChartToItem(data, "USO", "Oil ETF")),
-    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/HYG?range=1d&interval=1m").then((data) => yahooChartToItem(data, "HYG", "High yield credit ETF")),
-    fetchJsonWithProxyFallback("https://query1.finance.yahoo.com/v8/finance/chart/XLY?range=1d&interval=1m").then((data) => yahooChartToItem(data, "XLY", "Consumer discretionary ETF")),
-    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=spy.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "spy.us", "S&P 500 ETF")),
-    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=qqq.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "qqq.us", "Nasdaq 100 ETF")),
-    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=uup.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uup.us", "U.S. Dollar ETF")),
-    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=uso.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uso.us", "Oil ETF")),
-    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=hyg.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "hyg.us", "High yield credit ETF")),
-    fetchTextWithProxyFallback("https://stooq.com/q/l/?s=xly.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "xly.us", "Consumer discretionary ETF")),
-    fetchJsonWithProxyFallback("https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo").then(alphaVantageQuoteToItem),
-    fetchBlsSeries().then(blsSeriesToItems),
-    fetchJson("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&page[size]=3")
-      .then((data) => (data.data || []).slice(0, 3).map((item) => ({
-        title: `${item.security_desc || "Treasury security"} rate`,
-        text: `${item.record_date}: average interest rate ${item.avg_interest_rate_amt || "n/a"}%.`,
-        source: "U.S. Treasury Fiscal Data",
-        timestamp: item.record_date,
-        url: "https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates",
-      }))),
-  ];
-  const settled = await Promise.allSettled(requests);
-  const items = settled.flatMap((result) => {
-    if (result.status !== "fulfilled") return [];
-    return Array.isArray(result.value) ? result.value : [result.value];
-  });
-  if (!items.length) throw new Error("Stocks, BLS, and Treasury sources were unavailable.");
-  return items.slice(0, 14);
+  return (await fetchBackendJson("/api/live/economics")).items || [];
 }
 
 async function loadLivePolitics() {
-  const data = await fetchJson("https://www.federalregister.gov/api/v1/documents.json?per_page=6&order=newest");
-  return (data.results || []).slice(0, 6).map((item) => ({
-    title: item.title || "Federal Register item",
-    text: `${item.publication_date || "Recent"} - ${(item.agencies || []).map((agency) => agency.name).slice(0, 2).join(", ") || "Federal agency"}`,
-    source: "Federal Register government data",
-    timestamp: item.publication_date || "Recent",
-    url: item.html_url,
-  }));
+  return (await fetchBackendJson("/api/live/politics")).items || [];
 }
 
 async function loadLiveSports() {
   const selectedLeague = document.querySelector("#league-filter")?.value || "all";
-  const leagues = {
-    NBA: { url: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard", label: "ESPN NBA" },
-    NFL: { url: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", label: "ESPN NFL" },
-    MLB: { url: "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard", label: "ESPN MLB" },
-    NHL: { url: "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard", label: "ESPN NHL" },
-    GOLF: { url: "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard", label: "ESPN Golf" },
-    TENNIS: { url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard", label: "ESPN Tennis" },
-    UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC" },
-    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing" },
-  };
-  const targetLeagues = selectedLeague === "all" ? Object.values(leagues) : [leagues[selectedLeague]];
-  const settled = await Promise.allSettled(targetLeagues.map((league) => fetchJson(league.url).then((data) => ({ data, league }))));
-  const items = settled.flatMap((result) => {
-    if (result.status !== "fulfilled") return [];
-    const { data, league } = result.value;
-    return (data.events || []).slice(0, 4).map((event) => {
-      const competitors = event.competitions?.[0]?.competitors || [];
-      const names = competitors.map((team) => team.team?.shortDisplayName || team.team?.displayName).filter(Boolean).join(" vs ");
-      const scores = competitors.map((team) => `${team.team?.abbreviation || "TEAM"} ${team.score || "0"}`).join(" | ");
-      return {
-        title: names || event.name || `${league.label} event`,
-        text: `${event.status?.type?.shortDetail || "Scheduled"}${scores ? ` - ${scores}` : ""}`,
-        source: `${league.label} scores/schedule`,
-        timestamp: event.date ? new Date(event.date).toLocaleString() : "Schedule",
-        url: event.links?.[0]?.href,
-      };
-    });
-  });
-  if (!items.length) throw new Error("Sports scoreboards were unavailable.");
-  return items.slice(0, 10);
+  return (await fetchBackendJson(`/api/live/sports?league=${encodeURIComponent(selectedLeague)}`)).items || [];
 }
 
 async function loadLiveData(topic, button) {
@@ -902,6 +700,7 @@ async function runAutomationCheck() {
 }
 
 function renderSettings() {
+  document.querySelector("#backend-api-url").value = settings.backendApiUrl;
   document.querySelector("#openai-api-key").value = settings.openaiApiKey;
   document.querySelector("#news-source").value = settings.newsSource;
   document.querySelector("#market-source").value = settings.marketSource;
@@ -953,6 +752,7 @@ function renderPreferenceSummary() {
 
 function collectSettingsFromForm() {
   return {
+    backendApiUrl: document.querySelector("#backend-api-url").value.trim(),
     openaiApiKey: document.querySelector("#openai-api-key").value.trim(),
     newsSource: document.querySelector("#news-source").value.trim(),
     marketSource: document.querySelector("#market-source").value.trim(),
@@ -984,12 +784,14 @@ function wirePreferenceAutosave() {
 }
 
 function renderReadiness() {
+  const apiBase = getApiBase();
   const checks = [
-    { label: "AI API", detail: settings.openaiApiKey ? `${settings.modelName || defaultSettings.modelName} is ready for live chat responses.` : "Add an OpenAI API key in Settings to replace preset replies.", state: settings.openaiApiKey ? "ready" : "missing" },
-    { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded.` : "Use Load Live News or add a custom endpoint.", state: liveData.news.length ? "ready" : settings.newsSource ? "partial" : "missing" },
-    { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded.` : "Use Load Live Economics or add a custom endpoint.", state: liveData.economics.length ? "ready" : settings.marketSource ? "partial" : "missing" },
-    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} Federal Register items loaded.` : "Use Load Live Politics or add a custom endpoint.", state: liveData.politics.length ? "ready" : "missing" },
-    { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded.` : "Use Load Live Sports or add a sports source.", state: liveData.sports.length ? "ready" : settings.sportsSource ? "partial" : "missing" },
+    { label: "Backend API", detail: apiBase ? `Using backend at ${apiBase}.` : "Using same-origin backend. Run npm start locally or set a deployed backend URL for GitHub Pages.", state: "partial" },
+    { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
+    { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
+    { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
+    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} Federal Register items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
+    { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded through backend.` : "Use Load Live Sports to call /api/live/sports.", state: liveData.sports.length ? "ready" : "partial" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
     { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },
   ];
@@ -1049,10 +851,10 @@ chatForm.addEventListener("submit", async (event) => {
   chatInput.disabled = true;
   const sendButton = chatForm.querySelector("button");
   setLoadingButton(sendButton, true, "Thinking");
-  const thinkingMessage = addMessage("ai", settings.openaiApiKey ? "Thinking..." : "API key needed. Add your OpenAI API key in Settings to get real AI answers.");
+  const thinkingMessage = addMessage("ai", "Thinking through backend...");
 
   try {
-    const reply = settings.openaiApiKey ? await askOpenAI(prompt) : generateOfflineReply(prompt);
+    const reply = await askOpenAI(prompt);
     thinkingMessage.textContent = reply;
     conversationHistory.push({ role: "ai", text: reply });
   } catch (error) {
@@ -1117,7 +919,7 @@ document.querySelector("#save-settings-button").addEventListener("click", async 
   renderPreferenceSummary();
   renderReadiness();
   renderIntegrationPlan();
-  addMessage("ai", settings.openaiApiKey ? "Settings saved. Live AI chat and personalization are enabled for new messages." : "Settings saved. Your preferences are stored in the browser database; add an OpenAI API key when you want live AI answers.");
+  addMessage("ai", "Settings saved. The browser will call your backend for live data and AI requests.");
 });
 
 async function initializeApp() {
