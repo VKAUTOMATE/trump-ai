@@ -20,10 +20,11 @@ async function fetchJson(url, options, timeoutMs) {
   const response = await fetchWithTimeout(url, options, timeoutMs);
   if (!response.ok) {
     const details = await response.text().catch(() => "");
-    let message = `Source returned ${response.status}`;
+    let message = `${new URL(url).hostname} returned ${response.status}`;
     try {
       const parsed = JSON.parse(details);
-      message = parsed.error?.message || parsed.error || message;
+      const parsedMessage = typeof parsed.error === "string" ? parsed.error : parsed.error?.message;
+      message = parsedMessage ? `${message}: ${parsedMessage}` : message;
     } catch {
       if (details) message = `${message}: ${details.slice(0, 180)}`;
     }
