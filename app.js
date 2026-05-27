@@ -28,15 +28,15 @@ const politicsItems = [
 
 const sportsItems = [
   { league: "NBA", title: "NBA Prospect Watch", text: "Rookies, call-ups, injuries, rotation changes, usage spikes, and development storylines." },
-  { league: "NFL", title: "NFL Board", text: "Roster moves, schedule spots, quarterback health, and divisional stakes." },
-  { league: "MLB", title: "MLB Diamond Notes", text: "Probable pitchers, bullpen workload, streaks, and weather impact." },
-  { league: "NHL", title: "NHL Ice Sheet", text: "Goalie confirmations, special teams, travel, and playoff intensity." },
-  { league: "GOLF", title: "Golf Leaderboard Watch", text: "Tournament rounds, tee times, leaderboard movement, course fit, and weather." },
-  { league: "TENNIS", title: "Tennis Match Desk", text: "Draws, match schedules, surface trends, injuries, and form swings." },
-  { league: "UFC", title: "UFC Fight Card", text: "Fight schedules, weigh-ins, injuries, matchup styles, and card changes." },
-  { league: "BOXING", title: "Boxing Fight Board", text: "Fight cards, weigh-ins, rankings, title bouts, judging notes, and late changes." },
-  { league: "NBA", title: "Betting Context", text: "Market movement, public narratives, and stat angles without guaranteed picks." },
-  { league: "MLB", title: "Prospect Watch", text: "Call-ups, minor league surges, injuries, and development storylines." },
+  { league: "NFL", title: "NFL Prospect Watch", text: "Rookies, depth charts, quarterback health, roster moves, and weekly matchup pressure." },
+  { league: "MLB", title: "MLB Prospect Watch", text: "Call-ups, probable pitchers, bullpen workload, streaks, and player development movement." },
+  { league: "NHL", title: "NHL Prospect Watch", text: "Goalie confirmations, young-line usage, injuries, special teams, and playoff pressure." },
+  { league: "GOLF", title: "Golf Tournament Watch", text: "Tee times, leaderboard movement, course fit, weather, and late-round pressure." },
+  { league: "TENNIS", title: "Tennis Draw Watch", text: "Draws, match schedules, surface trends, injuries, form swings, and upset alerts." },
+  { league: "UFC", title: "UFC Fight Watch", text: "Fight schedules, weigh-ins, injuries, matchup styles, and card changes." },
+  { league: "BOXING", title: "Boxing Fight Watch", text: "Fight cards, weigh-ins, rankings, title bouts, judging notes, and late changes." },
+  { league: "NBA", title: "NBA Market Watch", text: "Lineup changes, market movement, public narratives, and stat angles without guaranteed picks." },
+  { league: "MLB", title: "MLB Call-Up Watch", text: "Minor league surges, roster changes, injuries, and development storylines." },
 ];
 
 const marketMetrics = [
@@ -461,7 +461,7 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
         <div class="trust-row"><span class="trust-badge analysis">Live Ready</span><span>${escapeHtml(item.timestamp || "Not loaded yet")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
-        <footer><span>Source: ${item.source || item.league || fallbackSource}</span><span>${item.timestamp || "Click live search"}</span></footer>
+        <footer><span>Source: ${item.source || (item.league ? `waiting for live ${item.league}` : fallbackSource)}</span><span>${item.timestamp || "Click Search Live Sports"}</span></footer>
       `;
       container.append(card);
     });
