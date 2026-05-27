@@ -1,4 +1,10 @@
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
+
+function normalizeModelName(modelName) {
+  const value = (modelName || "").trim();
+  if (!value || value === "gpt-5.4-mini") return OPENAI_MODEL;
+  return value;
+}
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
@@ -12,7 +18,17 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
 
 async function fetchJson(url, options, timeoutMs) {
   const response = await fetchWithTimeout(url, options, timeoutMs);
-  if (!response.ok) throw new Error(`Source returned ${response.status}`);
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    let message = `Source returned ${response.status}`;
+    try {
+      const parsed = JSON.parse(details);
+      message = parsed.error?.message || parsed.error || message;
+    } catch {
+      if (details) message = `${message}: ${details.slice(0, 180)}`;
+    }
+    throw new Error(message);
+  }
   return response.json();
 }
 
@@ -247,7 +263,7 @@ export async function chat(body) {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: body.modelName || OPENAI_MODEL,
+      model: normalizeModelName(body.modelName),
       input: [
         { role: "developer", content: [{ type: "input_text", text: body.systemPrompt || "You are TRUMP AI, a neutral research assistant." }] },
         ...(body.history || []),

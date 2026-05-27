@@ -60,7 +60,7 @@
             <div>
               <p class="eyebrow">Dashboard</p>
               <h3>TRUMP AI Command Dashboard</h3>
-              <p>Jump into live data, saved alerts, sports search, politics, economics, and your personal settings from one clear home screen.</p>
+              <p>Ask anything, get general AI answers, use live data, save alerts, search sports, track government, and manage your personal settings from one clear home screen.</p>
             </div>
             <button class="dashboard-action" data-jump="settings"><span class="button-icon">⚙</span>Personalize</button>
           </div>
@@ -113,7 +113,7 @@
             <section class="chat-panel">
               <div id="chat-log" class="chat-log" aria-live="polite"></div>
               <form id="chat-form" class="chat-form">
-                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask anything: explain, write, plan, verify a claim, build an automation, or create a market note" />
+                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask anything: explain homework, write a message, plan a task, code, verify a claim, or use live data" />
                 <button type="submit"><span class="button-icon">➤</span>Send</button>
               </form>
             </section>
@@ -128,6 +128,9 @@
                 <p class="card-label">Quick Prompts</p>
                 <div class="prompt-list">
                   <button data-prompt="Answer this question: ">Ask anything</button>
+                  <button data-prompt="Explain this in simple terms: ">Explain</button>
+                  <button data-prompt="Help me write this: ">Write</button>
+                  <button data-prompt="Help me solve this step by step: ">Tutor</button>
                   <button data-prompt="Verify this claim: ">Verify claim</button>
                   <button data-prompt="Give me a five point news briefing.">News briefing</button>
                   <button data-prompt="Create an automation to watch inflation, jobs, and Fed decisions.">Macro monitor</button>
@@ -270,7 +273,7 @@
               <h4>AI Connection</h4>
               <label><span>Backend API URL</span><input id="backend-api-url" type="url" autocomplete="off" placeholder="Leave blank for same server, or paste Render/Vercel URL" /></label>
               <label><span>OpenAI API key</span><input id="openai-api-key" type="password" autocomplete="off" placeholder="Move this to backend env OPENAI_API_KEY" /></label>
-              <label><span>Primary model</span><input id="model-name" type="text" placeholder="gpt-5.4-mini" /></label>
+              <label><span>Primary model</span><input id="model-name" type="text" placeholder="gpt-5-mini" /></label>
               <p class="settings-note">Live data and AI requests now go through your backend. Put secret keys in backend environment variables, not browser code.</p>
             </article>
             <article class="settings-panel">

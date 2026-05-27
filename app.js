@@ -73,7 +73,7 @@ const defaultSettings = {
   newsSource: "",
   marketSource: "",
   sportsSource: "",
-  modelName: "gpt-5.4-mini",
+  modelName: "gpt-5-mini",
   tone: "neutral",
   length: "balanced",
   citations: true,
@@ -128,7 +128,7 @@ async function fetchBackendJson(path, options = {}) {
 }
 
 const domainPrompts = {
-  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, and briefing system. You are not Donald Trump and must not impersonate any real person. Answer any reasonable user question directly: explain topics, write drafts, plan tasks, summarize information, build automations, verify claims, and connect ideas across news, economics, politics, sports, and general knowledge. Be direct, practical, and nonpartisan. Mark confirmed facts separately from opinion, inference, or analysis. If current/live facts are requested and no source data is provided, say what you can infer and what should be verified. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
+  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, tutor, writer, planner, and briefing system. You are not Donald Trump and must not impersonate any real person. The user can ask about anything: school, coding, business, writing, math, everyday decisions, travel, food, career, health education, technology, history, creativity, automations, news, economics, politics, sports, or general knowledge. Answer the user's actual question first, even when it is outside news, politics, economics, sports, or automation. Be clear, practical, and conversational. Ask a brief follow-up only when needed. Mark confirmed facts separately from opinion, inference, or analysis when the topic calls for it. If current/live facts are requested and no source data is provided, say what you can infer and what should be verified. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
   news: `News mode: prioritize verified events, timestamps, source quality, affected people or institutions, and likely second-order impact. Separate confirmed facts from uncertainty. Ask for live source links when needed.`,
   economics: `Economics mode: explain macro signals, market context, inflation, labor, rates, credit, commodities, and consumer data. Avoid financial advice. Present assumptions, risks, and data that would change the view.`,
   politics: `Politics mode: stay nonpartisan. Explain policy, institutions, elections, legislation, courts, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
@@ -141,6 +141,12 @@ const DB_NAME = "trump-ai-db";
 const DB_VERSION = 1;
 const STORE_NAME = "records";
 let dbPromise;
+
+function normalizeModelName(modelName) {
+  const value = (modelName || "").trim();
+  if (!value || value === "gpt-5.4-mini") return defaultSettings.modelName;
+  return value;
+}
 
 function normalizeTask(task) {
   return {
@@ -202,10 +208,12 @@ async function loadStoredState() {
     const legacySettings = JSON.parse(localStorage.getItem("trump-ai-settings") || "null");
     tasks = (storedTasks || legacyTasks || defaultTasks).map(normalizeTask);
     settings = { ...defaultSettings, ...(storedSettings || legacySettings || {}) };
+    settings.modelName = normalizeModelName(settings.modelName);
     await Promise.all([dbSet("tasks", tasks), dbSet("settings", settings)]);
   } catch (error) {
     tasks = (JSON.parse(localStorage.getItem("trump-ai-tasks") || "null") || defaultTasks).map(normalizeTask);
     settings = { ...defaultSettings, ...(JSON.parse(localStorage.getItem("trump-ai-settings") || "null") || {}) };
+    settings.modelName = normalizeModelName(settings.modelName);
     addMessage("ai", `Database fallback active: ${error.message}`);
   }
 }
@@ -395,7 +403,7 @@ function generateOfflineReply(prompt) {
   if (lower.includes("news") || lower.includes("brief")) {
     return `News brief: prioritize verified breaking events, business impact, geopolitical risk, technology shifts, and policy consequences. Current profile: ${profile}.`;
   }
-  return `Ask-anything mode: I can help explain, write, plan, summarize, brainstorm, or organize this request. Because no OpenAI API key is connected in this browser, this is an offline helper answer instead of a full AI API response.\n\nBest next step: add your OpenAI API key in Settings, then ask the same question again for a real AI answer. Current profile: ${profile}.`;
+  return `Ask-anything mode: I can help with general questions too: school, writing, coding, business ideas, math, planning, explanations, summaries, emails, recipes, travel, technology, history, and everyday decisions.\n\nBecause the AI API is not answering yet, this is the offline helper response. Once OPENAI_API_KEY is active in Vercel, the same command box will answer like a full general AI assistant. Current profile: ${profile}.`;
 }
 
 function classifyPrompt(prompt) {
@@ -793,7 +801,7 @@ function collectSettingsFromForm() {
     newsSource: document.querySelector("#news-source").value.trim(),
     marketSource: document.querySelector("#market-source").value.trim(),
     sportsSource: document.querySelector("#sports-source").value.trim(),
-    modelName: document.querySelector("#model-name").value.trim(),
+    modelName: normalizeModelName(document.querySelector("#model-name").value),
     tone: document.querySelector("#tone-setting").value,
     length: document.querySelector("#length-setting").value,
     citations: document.querySelector("#citations-setting").checked,
@@ -971,7 +979,7 @@ async function initializeApp() {
   renderSettings();
   renderLandingCards();
   wirePreferenceAutosave();
-  addMessage("ai", "Welcome to TRUMP AI. I can draft briefings, plan saved alerts, organize research, and summarize news, economics, politics, and sports from one command center.");
+  addMessage("ai", "Welcome to TRUMP AI. Ask me anything: general questions, writing, school help, coding, planning, research, saved alerts, news, economics, politics, and sports all work from this command center.");
 }
 
 initializeApp();
