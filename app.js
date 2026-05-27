@@ -111,7 +111,8 @@ function getApiBase() {
   const savedUrl = (settings.backendApiUrl || "").trim().replace(/\/$/, "");
   if (savedUrl) return savedUrl;
   const localHosts = ["127.0.0.1", "localhost"];
-  if (localHosts.includes(window.location.hostname)) return productionBackendUrl;
+  const host = window.location.hostname;
+  if (localHosts.includes(host) || host.endsWith("github.io")) return productionBackendUrl;
   return "";
 }
 
