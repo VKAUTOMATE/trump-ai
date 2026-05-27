@@ -350,6 +350,6 @@ export async function chat(body) {
       messages,
       max_tokens: body.maxOutputTokens || 900,
     }),
-  });
+  }, 45000);
   return { text: extractResponseText(response) || "I received an empty response from the model." };
 }
