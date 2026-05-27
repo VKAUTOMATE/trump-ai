@@ -132,10 +132,13 @@ function yahooChartToItem(data, symbol, label) {
   };
 }
 
-export async function loadNews() {
+export async function loadNews(query = "breaking news") {
   const errors = [];
   try {
-    const xml = await fetchText("https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", 7000);
+    const newsUrl = query === "breaking news"
+      ? "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
+      : `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+    const xml = await fetchText(newsUrl, 7000);
     const items = parseNewsRss(xml, "Google News");
     if (items.length) return items.slice(0, 6);
   } catch (error) {
@@ -330,6 +333,7 @@ function classifyChatPrompt(prompt = "") {
   if (/\b(epl|premier league)\b/.test(lower)) return { topic: "sports", league: "EPL" };
   if (/\b(champions league|ucl)\b/.test(lower)) return { topic: "sports", league: "UCL" };
   if (/\b(world cup|fifa world cup|worldcup)\b/.test(lower)) return { topic: "sports", league: "WORLDCUP" };
+  if (/\b(europa league|uel)\b/.test(lower)) return { topic: "sports", league: "UEL" };
   if (/\b(soccer|football club|la liga|serie a|bundesliga|ligue 1|mls|liga mx|nwsl|europa)\b/.test(lower)) return { topic: "sports", league: "SOCCER" };
   if (/\b(sports?|scores?|schedule|standings|game|match)\b/.test(lower)) return { topic: "sports", league: "all" };
   if (/\b(politics?|government|federal|agency|agencies|policy|policies|congress|senate|house|court|election|public issue|issues?|regulation|rulemaking)\b/.test(lower)) return { topic: "politics" };
@@ -351,8 +355,14 @@ function formatLiveContext(label, items = []) {
 
 async function buildBackendLiveContext(prompt = "") {
   const intent = classifyChatPrompt(prompt);
+  const lower = prompt.toLowerCase();
   const requests = [];
-  if (intent.topic === "sports") requests.push(["Sports", loadSports(intent.league)]);
+  if (intent.topic === "sports") {
+    requests.push(["Sports", loadSports(intent.league)]);
+    if (/\b(winner|champion|champions|won|final|latest|news|update)\b/.test(lower)) {
+      requests.push(["Related sports news", loadNews(prompt)]);
+    }
+  }
   if (intent.topic === "politics") {
     requests.push(["Government and politics", loadPolitics()]);
     requests.push(["Related headlines", loadNews()]);
@@ -388,7 +398,7 @@ export async function chat(body) {
   }
   const backendLiveContext = await buildBackendLiveContext(body.prompt || "");
   const messages = [
-    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits.", backendLiveContext].filter(Boolean).join("\n\n") },
+    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. Do not say 'as of my last knowledge update.' When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked.", backendLiveContext].filter(Boolean).join("\n\n") },
     ...(body.history || []).slice(-8).map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
