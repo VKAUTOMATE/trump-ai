@@ -105,18 +105,22 @@ const liveData = {
   politics: [],
   sports: [],
 };
+const productionBackendUrl = "https://trump-ai-vk.vercel.app";
 
 function getApiBase() {
-  return (settings.backendApiUrl || "").trim().replace(/\/$/, "");
+  const savedUrl = (settings.backendApiUrl || "").trim().replace(/\/$/, "");
+  if (savedUrl) return savedUrl;
+  const localHosts = ["127.0.0.1", "localhost"];
+  if (localHosts.includes(window.location.hostname)) return productionBackendUrl;
+  return "";
 }
 
 async function fetchBackendJson(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   const response = await fetch(`${getApiBase()}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+    headers,
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Backend returned ${response.status}`);
@@ -478,7 +482,7 @@ async function askOpenAI(prompt) {
 
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
   const container = document.querySelector(containerSelector);
-  const fallbackSource = containerSelector.includes("sports") ? "waiting for live sports" : containerSelector.includes("politics") ? "waiting for live politics" : "waiting for live news";
+  const fallbackSource = containerSelector.includes("sports") ? "sports source lane" : containerSelector.includes("politics") ? "government source lane" : "news source lane";
   container.innerHTML = "";
   items
     .filter((item) => filter === "all" || item[filterKey] === filter)
@@ -486,10 +490,10 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge analysis">Live Ready</span><span>${escapeHtml(item.timestamp || "Not loaded yet")}</span></div>
+        <div class="trust-row"><span class="trust-badge analysis">Source Lane</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
-        <footer><span>Source: ${item.source || (item.league ? `waiting for live ${item.league}` : fallbackSource)}</span><span>${item.timestamp || "Click Search Live Sports"}</span></footer>
+        <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span><span>${item.timestamp || "Load live data"}</span></footer>
       `;
       container.append(card);
     });
@@ -503,6 +507,8 @@ function renderLiveCards(topic, items) {
   if (topic === "economics") {
     renderMarketsFromLive(items);
   }
+  const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
+  if (staticGrid && topic !== "sports") staticGrid.hidden = true;
 
   if (!items.length) {
     container.innerHTML = "";
@@ -542,6 +548,8 @@ function renderLiveCards(topic, items) {
 function renderLiveError(topic, error) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
+  const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
+  if (staticGrid) staticGrid.hidden = false;
   container.innerHTML = `
     <article class="data-card live-card">
       <h4>Live ${topic} unavailable</h4>

@@ -1,6 +1,6 @@
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -10,16 +10,44 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
   }
 }
 
-async function fetchJson(url, options) {
-  const response = await fetchWithTimeout(url, options);
+async function fetchJson(url, options, timeoutMs) {
+  const response = await fetchWithTimeout(url, options, timeoutMs);
   if (!response.ok) throw new Error(`Source returned ${response.status}`);
   return response.json();
 }
 
-async function fetchText(url) {
-  const response = await fetchWithTimeout(url, { cache: "no-store" });
+async function fetchText(url, timeoutMs) {
+  const response = await fetchWithTimeout(url, { cache: "no-store" }, timeoutMs);
   if (!response.ok) throw new Error(`Source returned ${response.status}`);
   return response.text();
+}
+
+function decodeXml(value = "") {
+  return value
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function parseNewsRss(xml, sourceLabel) {
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 8).map((match) => {
+    const item = match[1];
+    const read = (tag) => decodeXml((item.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`)) || [])[1] || "");
+    const title = read("title").replace(/\s+-\s+[^-]+$/, "").trim() || "Live news item";
+    const published = read("pubDate");
+    const source = read("source") || sourceLabel;
+    const link = read("link");
+    return {
+      title,
+      text: `${published || "Latest"} - ${source}`,
+      source,
+      timestamp: published ? new Date(published).toLocaleString() : "Latest",
+      url: link,
+    };
+  });
 }
 
 function stooqCsvToItem(csv, symbol, label) {
@@ -88,14 +116,30 @@ function yahooChartToItem(data, symbol, label) {
 }
 
 export async function loadNews() {
-  const data = await fetchJson("https://api.gdeltproject.org/api/v2/doc/doc?query=breaking%20news&mode=ArtList&format=json&maxrecords=6&sort=HybridRel");
-  return (data.articles || []).slice(0, 6).map((article) => ({
-    title: article.title || "Untitled news item",
-    text: `${article.seendate || "Recent"} - ${article.domain || "news source"}`,
-    source: article.domain || "GDELT",
-    timestamp: article.seendate || "Recent",
-    url: article.url,
-  }));
+  const errors = [];
+  try {
+    const xml = await fetchText("https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", 7000);
+    const items = parseNewsRss(xml, "Google News");
+    if (items.length) return items.slice(0, 6);
+  } catch (error) {
+    errors.push(error.message);
+  }
+
+  try {
+    const data = await fetchJson("https://api.gdeltproject.org/api/v2/doc/doc?query=breaking%20news&mode=ArtList&format=json&maxrecords=6&sort=HybridRel", undefined, 12000);
+    const items = (data.articles || []).slice(0, 6).map((article) => ({
+      title: article.title || "Untitled news item",
+      text: `${article.seendate || "Recent"} - ${article.domain || "news source"}`,
+      source: article.domain || "GDELT",
+      timestamp: article.seendate || "Recent",
+      url: article.url,
+    }));
+    if (items.length) return items;
+  } catch (error) {
+    errors.push(error.message);
+  }
+
+  throw new Error(`News sources did not respond: ${errors.join("; ") || "unknown error"}`);
 }
 
 export async function loadEconomics() {
