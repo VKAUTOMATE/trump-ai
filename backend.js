@@ -276,6 +276,7 @@ function classifyChatPrompt(prompt = "") {
   if (/\b(soccer|football club|la liga|serie a|bundesliga|ligue 1|mls|liga mx|nwsl|europa)\b/.test(lower)) return { topic: "sports", league: "SOCCER" };
   if (/\b(sports?|scores?|schedule|standings|game|match)\b/.test(lower)) return { topic: "sports", league: "all" };
   if (/\b(politics?|government|federal|agency|agencies|policy|policies|congress|senate|house|court|election|public issue|issues?|regulation|rulemaking)\b/.test(lower)) return { topic: "politics" };
+  if (/\b(automation|automate|alert|alerts|schedule|scheduled|reminder|monitor|watchlist|notify|notification|email|text message|sms|daily|hourly|weekly|task|tasks)\b/.test(lower)) return { topic: "automation" };
   if (/\b(economy|economic|markets?|stocks?|inflation|jobs|fed|rates?|treasury|oil|credit)\b/.test(lower)) return { topic: "economics" };
   if (/\b(news|headlines?|breaking|latest|today)\b/.test(lower)) return { topic: "news" };
   return { topic: "general" };
@@ -301,6 +302,14 @@ async function buildBackendLiveContext(prompt = "") {
   }
   if (intent.topic === "economics") requests.push(["Economics and markets", loadEconomics()]);
   if (intent.topic === "news") requests.push(["News", loadNews()]);
+  if (intent.topic === "automation") {
+    return [
+      "Automation planning context:",
+      "The app can save alerts, preferences, favorite teams, watchlists, topics, schedules, cadence, triggers, and notification routes in browser storage.",
+      "When the user asks for an automation, give a clear setup with: name, goal, trigger, cadence, sources, output, notification route, and what backend/database support would strengthen it.",
+      "If the automation depends on live data, recommend the matching live backend route: /api/live/news, /api/live/economics, /api/live/politics, or /api/live/sports.",
+    ].join("\n");
+  }
   if (!requests.length) return "";
 
   const settled = await Promise.allSettled(requests.map(([, request]) => request));
@@ -322,7 +331,7 @@ export async function chat(body) {
   }
   const backendLiveContext = await buildBackendLiveContext(body.prompt || "");
   const messages = [
-    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", backendLiveContext].filter(Boolean).join("\n\n") },
+    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits.", backendLiveContext].filter(Boolean).join("\n\n") },
     ...(body.history || []).slice(-8).map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
