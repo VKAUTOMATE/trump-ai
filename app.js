@@ -475,6 +475,9 @@ function renderLiveCards(topic, items) {
   if (topic === "economics") {
     renderMarketsFromLive(items);
   }
+  if (topic === "sports") {
+    renderSportsFromLive(items);
+  }
 
   if (!items.length) {
     container.innerHTML = "";
@@ -609,6 +612,26 @@ function renderMarketsFromLive(items) {
       <footer>
         <span>${escapeHtml(item?.source || "Live economics source")}</span>
         ${item?.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Retry live load</span>"}
+      </footer>
+    `;
+    container.append(card);
+  });
+}
+
+function renderSportsFromLive(items) {
+  const container = document.querySelector("#sports-grid");
+  if (!container) return;
+  container.innerHTML = "";
+  items.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "data-card live-card";
+    card.innerHTML = `
+      <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
+      <h4>${escapeHtml(item.title)}</h4>
+      <p>${escapeHtml(item.text)}</p>
+      <footer>
+        <span>${escapeHtml(item.source || "Live sports source")}</span>
+        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
       </footer>
     `;
     container.append(card);
@@ -786,7 +809,7 @@ function wirePreferenceAutosave() {
 function renderReadiness() {
   const apiBase = getApiBase();
   const checks = [
-    { label: "Backend API", detail: apiBase ? `Using backend at ${apiBase}.` : "Using same-origin backend. Run npm start locally or set a deployed backend URL for GitHub Pages.", state: "partial" },
+    { label: "Backend API", detail: apiBase ? `Using backend at ${apiBase}.` : "Using same-origin Vercel API routes or a saved backend URL.", state: "partial" },
     { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
     { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
     { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
