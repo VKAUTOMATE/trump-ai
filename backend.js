@@ -201,6 +201,14 @@ export async function loadPolitics() {
 }
 
 export async function loadSports(league = "all") {
+  const today = new Date();
+  const dateOffsets = [-7, -3, 0, 3, 7, 14, 21, 30];
+  const dateStamp = (offset) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + offset);
+    return date.toISOString().slice(0, 10).replace(/-/g, "");
+  };
+  const withDate = (url, offset) => `${url}${url.includes("?") ? "&" : "?"}dates=${dateStamp(offset)}`;
   const boxingFallback = {
     league: "BOXING",
     title: "Boxing news and fight watch",
@@ -210,26 +218,26 @@ export async function loadSports(league = "all") {
     url: "https://www.espn.com/boxing/",
   };
   const leagues = {
-    NBA: { url: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard", label: "ESPN NBA" },
-    NFL: { url: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", label: "ESPN NFL" },
-    MLB: { url: "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard", label: "ESPN MLB" },
-    NHL: { url: "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard", label: "ESPN NHL" },
-    GOLF: { url: "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard", label: "ESPN Golf" },
-    TENNIS: { url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard", label: "ESPN Tennis" },
-    EPL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard", label: "ESPN Premier League" },
-    UCL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard", label: "ESPN Champions League" },
-    WORLDCUP: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard", label: "ESPN World Cup" },
-    WWC: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.wwc/scoreboard", label: "ESPN Women's World Cup" },
-    LALIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard", label: "ESPN La Liga" },
-    SERIEA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard", label: "ESPN Serie A" },
-    BUNDESLIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard", label: "ESPN Bundesliga" },
-    LIGUE1: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard", label: "ESPN Ligue 1" },
-    MLS: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard", label: "ESPN MLS" },
-    LIGAMX: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/mex.1/scoreboard", label: "ESPN Liga MX" },
-    NWSL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.nwsl/scoreboard", label: "ESPN NWSL" },
-    UEL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard", label: "ESPN Europa League" },
-    UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC" },
-    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing", fallback: boxingFallback },
+    NBA: { url: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard", label: "ESPN NBA", home: "https://www.espn.com/nba/scoreboard" },
+    NFL: { url: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", label: "ESPN NFL", home: "https://www.espn.com/nfl/scoreboard" },
+    MLB: { url: "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard", label: "ESPN MLB", home: "https://www.espn.com/mlb/scoreboard" },
+    NHL: { url: "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard", label: "ESPN NHL", home: "https://www.espn.com/nhl/scoreboard" },
+    GOLF: { url: "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard", label: "ESPN Golf", home: "https://www.espn.com/golf/leaderboard" },
+    TENNIS: { url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard", label: "ESPN Tennis", home: "https://www.espn.com/tennis/schedule" },
+    EPL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard", label: "ESPN Premier League", home: "https://www.espn.com/soccer/scoreboard/_/league/eng.1" },
+    UCL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard", label: "ESPN Champions League", home: "https://www.espn.com/soccer/scoreboard/_/league/uefa.champions" },
+    WORLDCUP: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard", label: "ESPN World Cup", home: "https://www.espn.com/soccer/scoreboard/_/league/fifa.world" },
+    WWC: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.wwc/scoreboard", label: "ESPN Women's World Cup", home: "https://www.espn.com/soccer/scoreboard/_/league/fifa.wwc" },
+    LALIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard", label: "ESPN La Liga", home: "https://www.espn.com/soccer/scoreboard/_/league/esp.1" },
+    SERIEA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard", label: "ESPN Serie A", home: "https://www.espn.com/soccer/scoreboard/_/league/ita.1" },
+    BUNDESLIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard", label: "ESPN Bundesliga", home: "https://www.espn.com/soccer/scoreboard/_/league/ger.1" },
+    LIGUE1: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard", label: "ESPN Ligue 1", home: "https://www.espn.com/soccer/scoreboard/_/league/fra.1" },
+    MLS: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard", label: "ESPN MLS", home: "https://www.espn.com/soccer/scoreboard/_/league/usa.1" },
+    LIGAMX: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/mex.1/scoreboard", label: "ESPN Liga MX", home: "https://www.espn.com/soccer/scoreboard/_/league/mex.1" },
+    NWSL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.nwsl/scoreboard", label: "ESPN NWSL", home: "https://www.espn.com/soccer/scoreboard/_/league/usa.nwsl" },
+    UEL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard", label: "ESPN Europa League", home: "https://www.espn.com/soccer/scoreboard/_/league/uefa.europa" },
+    UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC", home: "https://www.espn.com/mma/fightcenter" },
+    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing", home: "https://www.espn.com/boxing/", fallback: boxingFallback },
   };
   const soccerKeys = ["EPL", "UCL", "WORLDCUP", "WWC", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
   const withKey = (key) => leagues[key] ? { ...leagues[key], key } : null;
@@ -238,11 +246,17 @@ export async function loadSports(league = "all") {
     : league === "SOCCER"
       ? soccerKeys.map(withKey).filter(Boolean)
       : [withKey(league)].filter(Boolean);
-  const settled = await Promise.allSettled(targets.map((target) => fetchJson(target.url).then((data) => ({ data, target }))));
-  const perSourceLimit = league === "all" ? 1 : 4;
+  const urlsForTarget = (target) => (
+    league === "all" ? [target.url] : [target.url, ...dateOffsets.map((offset) => withDate(target.url, offset))]
+  );
+  const jobs = targets.flatMap((target) => (
+    urlsForTarget(target).map((url) => ({ target, request: fetchJson(url).then((data) => ({ data, target })) }))
+  ));
+  const settled = await Promise.allSettled(jobs.map((job) => job.request));
+  const perSourceLimit = league === "all" ? 2 : 4;
   const items = settled.flatMap((result, index) => {
     if (result.status !== "fulfilled") {
-      return targets[index]?.fallback ? [targets[index].fallback] : [];
+      return jobs[index]?.target?.fallback ? [jobs[index].target.fallback] : [];
     }
     const { data, target } = result.value;
     return (data.events || []).slice(0, perSourceLimit).map((event) => {
@@ -259,9 +273,34 @@ export async function loadSports(league = "all") {
       };
     });
   });
-  if (!items.length && league === "BOXING") return [boxingFallback];
-  if (!items.length) throw new Error("Sports scoreboards were unavailable.");
-  return items.slice(0, 28);
+  const seen = new Set();
+  const uniqueItems = items.filter((item) => {
+    const key = `${item.league}-${item.title}-${item.timestamp}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const sortedItems = uniqueItems.sort((a, b) => {
+    const aTime = Date.parse(a.timestamp || "") || 0;
+    const bTime = Date.parse(b.timestamp || "") || 0;
+    return bTime - aTime;
+  });
+  if (!sortedItems.length && league === "BOXING") return [boxingFallback];
+  if (!uniqueItems.length && league !== "all") {
+    const target = targets[0];
+    return [
+      {
+        league,
+        title: `${target?.label || league} live board`,
+        text: "No active scoreboard items were returned in the current date window. Use this board for upcoming fixtures, schedules, standings, injuries, and official league updates.",
+        source: target?.label || "Sports live board",
+        timestamp: "Live board",
+        url: target?.home,
+      },
+    ];
+  }
+  if (!sortedItems.length) throw new Error("Sports scoreboards were unavailable.");
+  return sortedItems.slice(0, league === "all" ? 36 : 12);
 }
 
 function extractResponseText(data) {
