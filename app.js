@@ -33,6 +33,17 @@ const sportsItems = [
   { league: "NHL", title: "NHL Prospect Watch", text: "Goalie confirmations, young-line usage, injuries, special teams, and playoff pressure." },
   { league: "GOLF", title: "Golf Tournament Watch", text: "Tee times, leaderboard movement, course fit, weather, and late-round pressure." },
   { league: "TENNIS", title: "Tennis Draw Watch", text: "Draws, match schedules, surface trends, injuries, form swings, and upset alerts." },
+  { league: "SOCCER", title: "Soccer Global Watch", text: "Fixtures, scores, tables, injuries, transfers, and top storylines across major soccer leagues." },
+  { league: "EPL", title: "Premier League Watch", text: "Fixtures, table pressure, injuries, rotation, form, and title or relegation races." },
+  { league: "UCL", title: "Champions League Watch", text: "Group and knockout fixtures, squad news, travel spots, form, and tactical matchups." },
+  { league: "LALIGA", title: "La Liga Watch", text: "Fixtures, standings, injuries, squad rotation, and title or European-place pressure." },
+  { league: "SERIEA", title: "Serie A Watch", text: "Fixtures, defensive form, injuries, table movement, and European qualification pressure." },
+  { league: "BUNDESLIGA", title: "Bundesliga Watch", text: "Fixtures, pressing matchups, form swings, injuries, and table pressure." },
+  { league: "LIGUE1", title: "Ligue 1 Watch", text: "Fixtures, squad news, title race, European spots, and relegation pressure." },
+  { league: "MLS", title: "MLS Watch", text: "Fixtures, playoff race, injuries, travel spots, roster moves, and form trends." },
+  { league: "LIGAMX", title: "Liga MX Watch", text: "Fixtures, table pressure, squad news, rivalry spots, and knockout implications." },
+  { league: "NWSL", title: "NWSL Watch", text: "Fixtures, table movement, injuries, player form, and playoff race pressure." },
+  { league: "UEL", title: "Europa League Watch", text: "Fixtures, squad rotation, travel pressure, knockout path, and matchup context." },
   { league: "UFC", title: "UFC Fight Watch", text: "Fight schedules, weigh-ins, injuries, matchup styles, and card changes." },
   { league: "BOXING", title: "Boxing Fight Watch", text: "Fight cards, weigh-ins, rankings, title bouts, judging notes, and late changes." },
   { league: "NBA", title: "NBA Market Watch", text: "Lineup changes, market movement, public narratives, and stat angles without guaranteed picks." },
@@ -274,7 +285,7 @@ function renderLandingCards() {
       icon: "●",
       label: "Sports",
       title: liveData.sports.length ? `${liveData.sports.length} score items` : "Scores and schedules",
-      text: liveData.sports[0]?.title || "Search NBA, NFL, MLB, NHL, golf, tennis, UFC, boxing.",
+      text: liveData.sports[0]?.title || "Search NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, boxing.",
       action: "sports",
       status: liveData.sports.length ? "Live" : "Ready",
     },
@@ -358,7 +369,7 @@ function generateOfflineReply(prompt) {
     return "Politics brief: track the policy calendar, legislation, court deadlines, election indicators, fundraising, and public opinion. Keep it nonpartisan and cite primary sources when live data is connected.";
   }
   if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("golf") || lower.includes("tennis") || lower.includes("ufc") || lower.includes("boxing")) {
-    return "Sports brief: monitor injuries, schedules, rest, roster moves, weather, standings pressure, fight cards, tee times, draws, and matchup edges. Use the Sports desk for NBA, NFL, MLB, NHL, golf, tennis, UFC, and boxing.";
+    return "Sports brief: monitor injuries, schedules, rest, roster moves, weather, standings pressure, soccer fixtures, fight cards, tee times, draws, and matchup edges. Use the Sports desk for NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, and boxing.";
   }
   if (lower.includes("news") || lower.includes("brief")) {
     return `News brief: prioritize verified breaking events, business impact, geopolitical risk, technology shifts, and policy consequences. Current profile: ${profile}.`;
@@ -372,7 +383,7 @@ function classifyPrompt(prompt) {
   if (lower.includes("automation") || lower.includes("task") || lower.includes("alert") || lower.includes("monitor")) return "automation";
   if (lower.includes("economic") || lower.includes("market") || lower.includes("marknote") || lower.includes("market note") || lower.includes("inflation") || lower.includes("fed") || lower.includes("stock") || lower.includes("jobs")) return "economics";
   if (lower.includes("politic") || lower.includes("election") || lower.includes("policy") || lower.includes("congress") || lower.includes("court")) return "politics";
-  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("golf") || lower.includes("tennis") || lower.includes("ufc") || lower.includes("boxing") || lower.includes("score")) return "sports";
+  if (lower.includes("sport") || lower.includes("soccer") || lower.includes("football club") || lower.includes("premier league") || lower.includes("champions league") || lower.includes("la liga") || lower.includes("serie a") || lower.includes("bundesliga") || lower.includes("ligue 1") || lower.includes("mls") || lower.includes("liga mx") || lower.includes("nwsl") || lower.includes("europa league") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("golf") || lower.includes("tennis") || lower.includes("ufc") || lower.includes("boxing") || lower.includes("score")) return "sports";
   if (lower.includes("news") || lower.includes("headline") || lower.includes("brief") || lower.includes("breaking")) return "news";
   return "base";
 }
@@ -474,9 +485,6 @@ function renderLiveCards(topic, items) {
   renderLandingCards();
   if (topic === "economics") {
     renderMarketsFromLive(items);
-  }
-  if (topic === "sports") {
-    renderSportsFromLive(items);
   }
 
   if (!items.length) {
@@ -612,26 +620,6 @@ function renderMarketsFromLive(items) {
       <footer>
         <span>${escapeHtml(item?.source || "Live economics source")}</span>
         ${item?.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Retry live load</span>"}
-      </footer>
-    `;
-    container.append(card);
-  });
-}
-
-function renderSportsFromLive(items) {
-  const container = document.querySelector("#sports-grid");
-  if (!container) return;
-  container.innerHTML = "";
-  items.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "data-card live-card";
-    card.innerHTML = `
-      <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
-      <h4>${escapeHtml(item.title)}</h4>
-      <p>${escapeHtml(item.text)}</p>
-      <footer>
-        <span>${escapeHtml(item.source || "Live sports source")}</span>
-        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
       </footer>
     `;
     container.append(card);

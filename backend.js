@@ -147,10 +147,25 @@ export async function loadSports(league = "all") {
     NHL: { url: "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard", label: "ESPN NHL" },
     GOLF: { url: "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard", label: "ESPN Golf" },
     TENNIS: { url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard", label: "ESPN Tennis" },
+    EPL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard", label: "ESPN Premier League" },
+    UCL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard", label: "ESPN Champions League" },
+    LALIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard", label: "ESPN La Liga" },
+    SERIEA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard", label: "ESPN Serie A" },
+    BUNDESLIGA: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard", label: "ESPN Bundesliga" },
+    LIGUE1: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard", label: "ESPN Ligue 1" },
+    MLS: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard", label: "ESPN MLS" },
+    LIGAMX: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/mex.1/scoreboard", label: "ESPN Liga MX" },
+    NWSL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.nwsl/scoreboard", label: "ESPN NWSL" },
+    UEL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard", label: "ESPN Europa League" },
     UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC" },
     BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing" },
   };
-  const targets = league === "all" ? Object.values(leagues) : [leagues[league]].filter(Boolean);
+  const soccerKeys = ["EPL", "UCL", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
+  const targets = league === "all"
+    ? Object.values(leagues)
+    : league === "SOCCER"
+      ? soccerKeys.map((key) => leagues[key])
+      : [leagues[league]].filter(Boolean);
   const settled = await Promise.allSettled(targets.map((target) => fetchJson(target.url).then((data) => ({ data, target }))));
   const items = settled.flatMap((result) => {
     if (result.status !== "fulfilled") return [];
