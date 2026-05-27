@@ -499,10 +499,10 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge analysis">Source Lane</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
+        <div class="trust-row"><span class="trust-badge ${item.url ? "fact" : "analysis"}">${item.url ? "Fact Source" : "Source Lane"}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
-        <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span><span>${item.timestamp || "Load live data"}</span></footer>
+        <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
       `;
       container.append(card);
     });
@@ -513,11 +513,17 @@ function renderLiveCards(topic, items) {
   if (!container) return;
   liveData[topic] = items;
   renderLandingCards();
+  if (topic === "news") {
+    renderCards("#news-grid", mapNewsLiveToLanes(items));
+  }
   if (topic === "economics") {
     renderMarketsFromLive(items);
   }
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
-  if (staticGrid && topic !== "sports") staticGrid.hidden = true;
+  if (staticGrid && topic !== "sports" && topic !== "news") {
+    staticGrid.hidden = true;
+    staticGrid.setAttribute("aria-hidden", "true");
+  }
 
   if (!items.length) {
     container.innerHTML = "";
@@ -558,7 +564,10 @@ function renderLiveError(topic, error) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
-  if (staticGrid) staticGrid.hidden = false;
+  if (staticGrid) {
+    staticGrid.hidden = false;
+    staticGrid.removeAttribute("aria-hidden");
+  }
   container.innerHTML = `
     <article class="data-card live-card">
       <h4>Live ${topic} unavailable</h4>
@@ -566,6 +575,29 @@ function renderLiveError(topic, error) {
       <footer><span>Source pending</span><span>Live-ready cards below</span></footer>
     </article>
   `;
+}
+
+function mapNewsLiveToLanes(items = []) {
+  if (!items.length) return newsItems;
+  const lanes = [
+    { category: "us", title: "U.S. Headlines", source: "Live news source" },
+    { category: "world", title: "World Desk", source: "Live global source" },
+    { category: "business", title: "Business Wire", source: "Live business source" },
+    { category: "technology", title: "Technology and AI", source: "Live technology source" },
+    { category: "markets", title: "Energy and Commodities", source: "Live market source" },
+    { category: "world", title: "Risk and Security", source: "Live risk source" },
+  ];
+  return lanes.map((lane, index) => {
+    const item = items[index % items.length];
+    return {
+      category: lane.category,
+      title: item.title || lane.title,
+      text: item.text || "Live news item loaded from the backend.",
+      source: item.source || lane.source,
+      timestamp: item.timestamp || "Live",
+      url: item.url,
+    };
+  });
 }
 
 async function loadLiveNews() {
