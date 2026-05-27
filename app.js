@@ -621,47 +621,14 @@ function mapNewsLiveToLanes(items = []) {
 function mapSportsLiveToLanes(items = []) {
   if (!items.length) return sportsItems;
   const selectedLeague = document.querySelector("#league-filter")?.value || "all";
-  if (selectedLeague !== "all") {
-    return items.map((item) => ({
-      league: item.league || selectedLeague,
-      title: item.title || `${selectedLeague} live event`,
-      text: item.text || "Live sports item loaded from the backend.",
-      source: item.source || `${selectedLeague} live source`,
-      timestamp: item.timestamp || "Live",
-      url: item.url,
-    }));
-  }
-  const visibleLanes = sportsItems.filter((item) => selectedLeague === "all" || item.league === selectedLeague);
-  const usedIndexes = new Set();
-  const takeItemForLeague = (league) => {
-    const soccerLeagues = ["EPL", "UCL", "WORLDCUP", "WWC", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
-    const index = items.findIndex((candidate, candidateIndex) => {
-      if (usedIndexes.has(candidateIndex)) return false;
-      if (candidate.league === league) return true;
-      return league === "SOCCER" && soccerLeagues.includes(candidate.league);
-    });
-    if (index === -1) return null;
-    usedIndexes.add(index);
-    return items[index];
-  };
-  return visibleLanes.map((lane) => {
-    const item = takeItemForLeague(lane.league);
-    if (!item) {
-      return {
-        ...lane,
-        source: `${lane.league} source lane`,
-        timestamp: "No live item in this refresh",
-      };
-    }
-    return {
-      league: lane.league,
-      title: item.title || lane.title,
-      text: item.text || "Live sports item loaded from the backend.",
-      source: item.source || `${lane.league} live source`,
-      timestamp: item.timestamp || "Live",
-      url: item.url,
-    };
-  });
+  return items.map((item) => ({
+    league: item.league || selectedLeague,
+    title: item.title || `${selectedLeague === "all" ? "Sports" : selectedLeague} live event`,
+    text: item.text || "Live sports item loaded from the backend.",
+    source: item.source || `${item.league || selectedLeague} live source`,
+    timestamp: item.timestamp || "Live",
+    url: item.url,
+  }));
 }
 
 async function loadLiveNews() {
@@ -1016,7 +983,11 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
 document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
-document.querySelector("#league-filter").addEventListener("change", (event) => renderCards("#sports-grid", sportsItems, event.target.value, "league"));
+document.querySelector("#league-filter").addEventListener("change", (event) => {
+  renderCards("#sports-grid", sportsItems, event.target.value, "league");
+  const sportsButton = document.querySelector('.live-button[data-live="sports"]');
+  if (sportsButton) loadLiveData("sports", sportsButton);
+});
 document.querySelectorAll(".live-button").forEach((button) => {
   button.addEventListener("click", () => loadLiveData(button.dataset.live, button));
 });
