@@ -9,21 +9,21 @@ const views = {
 };
 
 const newsItems = [
-  { category: "world", title: "Global Watch", text: "Track major diplomatic, security, and humanitarian developments with concise context and impact notes.", source: "Waiting for live news", timestamp: "Not loaded yet" },
-  { category: "business", title: "Corporate Signals", text: "Summarize earnings, layoffs, mergers, supply chains, and CEO commentary into an executive-ready digest.", source: "Waiting for live business news", timestamp: "Not loaded yet" },
-  { category: "technology", title: "AI and Tech", text: "Monitor product launches, model releases, regulation, chips, cybersecurity, and platform policy changes.", source: "Waiting for live technology news", timestamp: "Not loaded yet" },
-  { category: "business", title: "Energy and Commodities", text: "Connect oil, gas, power, agriculture, metals, and shipping moves to inflation and market pressure.", source: "Waiting for live market news", timestamp: "Not loaded yet" },
-  { category: "world", title: "Risk Map", text: "Flag countries, regions, and events where policy risk could spill into markets or security planning.", source: "Waiting for live risk news", timestamp: "Not loaded yet" },
-  { category: "technology", title: "Platform Pulse", text: "Watch search, social, streaming, and app store changes that influence media reach and consumer behavior.", source: "Waiting for live platform news", timestamp: "Not loaded yet" },
+  { category: "us", title: "U.S. Headlines", text: "National stories, institutions, courts, weather, safety, and public-impact updates ready for source-backed refresh.", source: "GDELT backend route", timestamp: "Click Load Live News" },
+  { category: "world", title: "World Desk", text: "Diplomacy, security, humanitarian developments, trade routes, and global risk signals with source labels.", source: "GDELT global news", timestamp: "Click Load Live News" },
+  { category: "business", title: "Business Wire", text: "Earnings, layoffs, mergers, supply chains, labor pressure, and company statements for briefing cards.", source: "GDELT business topics", timestamp: "Click Load Live News" },
+  { category: "technology", title: "Technology and AI", text: "Model releases, chips, cybersecurity, platform policy, regulation, and product launch monitoring.", source: "GDELT technology topics", timestamp: "Click Load Live News" },
+  { category: "markets", title: "Energy and Commodities", text: "Oil, gas, power, metals, agriculture, shipping, and inflation-linked market pressure in one lane.", source: "GDELT market topics", timestamp: "Click Load Live News" },
+  { category: "world", title: "Risk and Security", text: "Fast-moving events that may affect markets, travel, defense, supply chains, or public safety.", source: "GDELT risk topics", timestamp: "Click Load Live News" },
 ];
 
 const politicsItems = [
-  { title: "Policy Calendar", text: "Build weekly summaries of votes, hearings, executive actions, court deadlines, and agency rulemaking.", source: "Waiting for live government data", timestamp: "Not loaded yet" },
-  { title: "Election Landscape", text: "Compare polling direction, fundraising, turnout indicators, ballot access, and district-level pressure points.", source: "Waiting for live election data", timestamp: "Not loaded yet" },
-  { title: "Legislation Monitor", text: "Turn bills and amendments into plain-English summaries with likely winners, losers, and open questions.", source: "Waiting for live legislation data", timestamp: "Not loaded yet" },
-  { title: "Public Opinion", text: "Separate headline noise from durable opinion shifts across economy, immigration, health care, and foreign policy.", source: "Waiting for live public data", timestamp: "Not loaded yet" },
-  { title: "Geopolitics", text: "Connect international political developments to trade, defense, supply chains, energy, and financial markets.", source: "Waiting for live policy data", timestamp: "Not loaded yet" },
-  { title: "Accountability", text: "Highlight claims that need verification and identify the primary sources needed to check them.", source: "Waiting for live source data", timestamp: "Not loaded yet" },
+  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
+  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
+  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress data route ready", timestamp: "Backend-ready lane" },
+  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "Court source lane ready", timestamp: "Backend-ready lane" },
+  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "Election source lane ready", timestamp: "Backend-ready lane" },
+  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Verification workflow", timestamp: "Live-ready lane" },
 ];
 
 const sportsItems = [
@@ -902,6 +902,7 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
+document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
 document.querySelector("#league-filter").addEventListener("change", (event) => renderCards("#sports-grid", sportsItems, event.target.value, "league"));
 document.querySelectorAll(".live-button").forEach((button) => {
   button.addEventListener("click", () => loadLiveData(button.dataset.live, button));
