@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260528-dashboard-sorts-2" />
+    <link rel="stylesheet" href="styles.css?v=20260528-stable-restore" />
   </head>
   <body>
     <div class="app-shell">
@@ -112,21 +112,15 @@
           <div class="command-grid">
             <section class="chat-panel">
               <div class="chat-tools">
-                <div class="assistant-title">
-                  <span class="assistant-avatar" aria-hidden="true"><span></span></span>
-                  <div>
-                    <strong>TRUMP AI Assistant</strong>
-                    <small>Live-aware command robot</small>
-                  </div>
-                </div>
-                <div class="chat-actions">
+                <strong>Personal assistant chat</strong>
+                <div>
                   <button id="export-chat-button" class="subtle" type="button"><span class="button-icon">&#8681;</span>Export</button>
-                  <button id="clear-chat-button" class="subtle" type="button"><span class="button-icon">&#8634;</span>New Chat</button>
+                  <button id="clear-chat-button" class="subtle" type="button"><span class="button-icon">&#8634;</span>Clear</button>
                 </div>
               </div>
               <div id="chat-log" class="chat-log" aria-live="polite"></div>
               <form id="chat-form" class="chat-form">
-                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask a clear command: verify a claim, get a score, write something, explain a topic, or search live context" />
+                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask anything: explain homework, write a message, plan a task, code, verify a claim, or use live data" />
                 <button type="submit"><span class="button-icon">&#10148;</span>Send</button>
               </form>
             </section>
@@ -191,11 +185,6 @@
                 <option value="technology">Technology</option>
                 <option value="markets">Markets</option>
               </select>
-              <select id="news-sort" aria-label="Sort news">
-                <option value="latest">Latest first</option>
-                <option value="source">Source</option>
-                <option value="title">Title</option>
-              </select>
               <button class="live-button" data-live="news"><span class="button-icon">&#8623;</span>Load Live News</button>
             </div>
           </div>
@@ -210,12 +199,6 @@
               <h3>Macro Dashboard</h3>
             </div>
             <div class="section-actions">
-              <select id="economics-sort" aria-label="Sort economics dashboard">
-                <option value="dashboard">Dashboard order</option>
-                <option value="live">Live first</option>
-                <option value="source">Source</option>
-                <option value="title">Title</option>
-              </select>
               <button id="simulate-markets"><span class="button-icon">&#8635;</span>Simulate Update</button>
               <button class="live-button" data-live="economics"><span class="button-icon">&#8623;</span>Load Live Economics</button>
             </div>
@@ -238,12 +221,6 @@
                 <option value="courts">Courts</option>
                 <option value="elections">Elections</option>
                 <option value="oversight">Oversight</option>
-              </select>
-              <select id="politics-sort" aria-label="Sort politics and government">
-                <option value="latest">Latest first</option>
-                <option value="source">Source</option>
-                <option value="title">Title</option>
-                <option value="lane">Lane</option>
               </select>
               <span class="badge">Nonpartisan</span>
               <button class="live-button" data-live="politics"><span class="button-icon">&#8623;</span>Load Live Politics</button>
@@ -283,11 +260,6 @@
                 <option value="UEL">Europa League</option>
                 <option value="UFC">UFC</option>
                 <option value="BOXING">Boxing</option>
-              </select>
-              <select id="sports-sort" aria-label="Sort sports">
-                <option value="league">League</option>
-                <option value="title">Title</option>
-                <option value="source">Source</option>
               </select>
               <button class="live-button" data-live="sports"><span class="button-icon">&#8981;</span>Search Live Sports</button>
             </div>
@@ -393,6 +365,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260528-dashboard-sorts-2"></script>
+    <script src="app.js?v=20260528-stable-restore"></script>
   </body>
 </html>

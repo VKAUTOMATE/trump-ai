@@ -18,12 +18,12 @@ const newsItems = [
 ];
 
 const politicsItems = [
-  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Live now", status: "live" },
-  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Live now", status: "live" },
-  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress.gov RSS route", timestamp: "Live route ready", status: "live" },
-  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "CourtListener route", timestamp: "Live route ready", status: "live" },
-  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "EAC and Vote.gov route", timestamp: "Live route ready", status: "live" },
-  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Oversight.gov route", timestamp: "Live route ready", status: "live" },
+  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
+  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
+  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress data route ready", timestamp: "Backend-ready lane" },
+  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "Court source lane ready", timestamp: "Backend-ready lane" },
+  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "Election source lane ready", timestamp: "Backend-ready lane" },
+  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Verification workflow", timestamp: "Live-ready lane" },
 ];
 
 const sportsItems = [
@@ -133,11 +133,11 @@ async function fetchBackendJson(path, options = {}) {
 }
 
 const domainPrompts = {
-  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, tutor, writer, planner, and briefing system. You are not Donald Trump and must not impersonate any real person. The command box is open-ended: the user can ask any normal question, not only news, economics, politics, government, sports, or automation. Help with school, coding, business, writing, math, everyday decisions, travel, food, career, health education, technology, history, creativity, planning, explanations, summaries, comparisons, and general knowledge. Always answer the user's actual question first. Never say you are limited to the dashboard categories. The backend may provide live context for sports, politics, government, public issues, economics, or news; use it when present and name its limits. Do not say "as of my last knowledge update." If live context is insufficient, say the loaded sources do not confirm the answer and name the best source to check. Be clear, practical, and conversational. Ask a brief follow-up only when needed. Mark confirmed facts separately from opinion, inference, or analysis when the topic calls for it. Avoid fabricating citations, prices, scores, polls, or breaking news. For sports result questions, include the opponent or winner, final score, round/date, and source when known; if any of those details are not confirmed by loaded context, say exactly what is missing instead of giving a partial answer.`,
+  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, tutor, writer, planner, and briefing system. You are not Donald Trump and must not impersonate any real person. The command box is open-ended: the user can ask any normal question, not only news, economics, politics, government, sports, or automation. Help with school, coding, business, writing, math, everyday decisions, travel, food, career, health education, technology, history, creativity, planning, explanations, summaries, comparisons, and general knowledge. Always answer the user's actual question first. Never say you are limited to the dashboard categories. The backend may provide live context for sports, politics, government, public issues, economics, or news; use it when present and name its limits. Do not say "as of my last knowledge update." If live context is insufficient, say the loaded sources do not confirm the answer and name the best source to check. Be clear, practical, and conversational. Ask a brief follow-up only when needed. Mark confirmed facts separately from opinion, inference, or analysis when the topic calls for it. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
   news: `News mode: prioritize verified events, timestamps, source quality, affected people or institutions, and likely second-order impact. Separate confirmed facts from uncertainty. Ask for live source links when needed.`,
   economics: `Economics mode: explain macro signals, market context, inflation, labor, rates, credit, commodities, and consumer data. Avoid financial advice. Present assumptions, risks, and data that would change the view.`,
   politics: `Politics and government mode: stay nonpartisan. Explain policy, institutions, agencies, elections, legislation, courts, regulations, public issues, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
-  sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results. If the user asks who won, who lost, the opponent, or the score, answer those details first and cite the loaded source. If the loaded context does not include the score or opponent, say so and name the official league, tournament, or ESPN scoreboard to check.`,
+  sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results.`,
   automation: `Automation planning mode: convert any user goal into saved alerts, monitors, reminders, triggers, cadence, sources, thresholds, notification routes, and output formats. Be specific about what can run now in this browser app versus what needs a backend scheduler, database, email, or text-message provider.`,
   verify: `Verification mode: evaluate the claim cautiously. Break the answer into Claim, What is known, What needs verification, Best sources to check, and Confidence. Do not invent citations. If live source data is missing, say that primary-source checking is required.`,
 };
@@ -386,113 +386,18 @@ function renderLandingCards() {
 function addMessage(role, text) {
   const message = document.createElement("div");
   message.className = `message ${role}`;
-  const avatar = document.createElement("span");
-  avatar.className = "message-avatar";
-  avatar.setAttribute("aria-hidden", "true");
-  avatar.textContent = role === "user" ? "YOU" : "AI";
-  const bubble = document.createElement("div");
-  bubble.className = "message-bubble";
-  const textNode = document.createElement("p");
-  textNode.className = "message-text";
-  textNode.textContent = text;
-  const actions = document.createElement("div");
-  actions.className = "message-actions";
-  const likeButton = createMessageAction("Like", "&#128077;");
-  const dislikeButton = createMessageAction("Dislike", "&#128078;");
-  const copyButton = document.createElement("button");
-  copyButton.className = "copy-message";
-  copyButton.type = "button";
-  copyButton.title = "Copy";
-  copyButton.setAttribute("aria-label", "Copy message");
-  copyButton.innerHTML = "&#10697;";
-  copyButton.addEventListener("click", () => copyMessageText(text, copyButton));
-  const moreButton = createMessageAction("More", "&#8943;");
-  likeButton.addEventListener("click", () => toggleMessageReaction(likeButton, dislikeButton));
-  dislikeButton.addEventListener("click", () => toggleMessageReaction(dislikeButton, likeButton));
-  moreButton.addEventListener("click", () => copyMessageText(text, copyButton));
-  actions.append(likeButton, dislikeButton, copyButton, moreButton);
-  bubble.append(textNode, actions);
-  message.append(avatar, bubble);
-  chatLog.classList.remove("empty");
+  message.textContent = text;
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
   return message;
 }
 
-function updateMessageText(message, text) {
-  const textNode = message.querySelector(".message-text");
-  if (textNode) {
-    textNode.textContent = text;
-    const copyButton = message.querySelector(".copy-message");
-    if (copyButton) {
-      copyButton.onclick = () => copyMessageText(text, copyButton);
-    }
-    return;
-  }
-  message.textContent = text;
-}
-
-function createMessageAction(label, html) {
-  const button = document.createElement("button");
-  button.className = "message-action";
-  button.type = "button";
-  button.title = label;
-  button.setAttribute("aria-label", `${label} message`);
-  button.innerHTML = html;
-  return button;
-}
-
-function toggleMessageReaction(activeButton, otherButton) {
-  activeButton.classList.toggle("active");
-  otherButton.classList.remove("active");
-}
-
-async function copyMessageText(text, button) {
-  const original = button.innerHTML;
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-    } else {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      document.body.append(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      textarea.remove();
-    }
-    button.innerHTML = "&#10003;";
-    button.classList.add("copied");
-  } catch {
-    button.innerHTML = "!";
-  } finally {
-    setTimeout(() => {
-      button.innerHTML = original;
-      button.classList.remove("copied");
-    }, 1400);
-  }
-}
-
-function renderEmptyChatState() {
-  chatLog.innerHTML = `
-    <div class="chat-empty">
-      <p class="card-label">Command ready</p>
-      <h4>Ask, verify, write, or search live context</h4>
-      <p>For current scores, markets, policy, or news, ask the exact question and I will use the backend context when it is available. If a fact is missing, I will name the source to check.</p>
-    </div>
-  `;
-  chatLog.classList.add("empty");
-}
-
 function renderChatHistory() {
   chatLog.innerHTML = "";
   if (!conversationHistory.length) {
-    renderEmptyChatState();
+    addMessage("ai", "Welcome to TRUMP AI. Ask me anything: general questions, writing, school help, coding, planning, research, saved alerts, news, economics, politics, and sports all work from this command center.");
     return;
   }
-  chatLog.classList.remove("empty");
   conversationHistory.forEach((entry) => addMessage(entry.role, entry.text));
 }
 
@@ -506,7 +411,7 @@ function buildChatExport() {
     ? conversationHistory
     : [...chatLog.querySelectorAll(".message")].map((message) => ({
         role: message.classList.contains("user") ? "user" : "ai",
-        text: message.querySelector(".message-text")?.textContent || message.textContent,
+        text: message.textContent,
         timestamp: "",
       }));
   const lines = [
@@ -663,21 +568,14 @@ async function askOpenAI(prompt) {
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
   const container = document.querySelector(containerSelector);
   const fallbackSource = containerSelector.includes("sports") ? "sports source lane" : containerSelector.includes("politics") ? "government source lane" : "news source lane";
-  const statusLabels = {
-    live: "Live Route",
-    planned: "Planned Route",
-    manual: "Manual Check",
-  };
   container.innerHTML = "";
   items
     .filter((item) => filter === "all" || item[filterKey] === filter)
     .forEach((item) => {
       const card = document.createElement("article");
-      const status = item.url ? "fact" : item.status || "analysis";
-      const label = item.url ? "Fact Source" : statusLabels[item.status] || "Source Lane";
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
+        <div class="trust-row"><span class="trust-badge ${item.url ? "fact" : "analysis"}">${item.url ? "Fact Source" : "Source Lane"}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
         <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
@@ -686,82 +584,19 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
     });
 }
 
-function parseTimestampValue(value) {
-  if (!value) return 0;
-  const time = Date.parse(value);
-  if (!Number.isNaN(time)) return time;
-  if (/live|ready|latest|now/i.test(value)) return Date.now();
-  return 0;
-}
-
-function sortGovernmentItems(items = []) {
-  const sortMode = document.querySelector("#politics-sort")?.value || "latest";
-  const copy = [...items];
-  const byText = (key) => (a, b) => String(a[key] || "").localeCompare(String(b[key] || ""));
-  if (sortMode === "title") return copy.sort(byText("title"));
-  if (sortMode === "source") return copy.sort(byText("source"));
-  if (sortMode === "lane") return copy.sort((a, b) => String(a.category || a.source || "").localeCompare(String(b.category || b.source || "")));
-  return copy.sort((a, b) => parseTimestampValue(b.timestamp) - parseTimestampValue(a.timestamp));
-}
-
-function filterGovernmentItems(items = []) {
-  const filter = document.querySelector("#politics-filter")?.value || "all";
-  return items.filter((item) => filter === "all" || item.category === filter);
-}
-
-function renderGovernmentCards() {
-  renderCards("#politics-grid", sortGovernmentItems(politicsItems), document.querySelector("#politics-filter")?.value || "all");
-}
-
-function sortNewsItems(items = []) {
-  const sortMode = document.querySelector("#news-sort")?.value || "latest";
-  const copy = [...items];
-  if (sortMode === "title") return copy.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
-  if (sortMode === "source") return copy.sort((a, b) => String(a.source || "").localeCompare(String(b.source || "")));
-  return copy.sort((a, b) => parseTimestampValue(b.timestamp) - parseTimestampValue(a.timestamp));
-}
-
-function renderNewsCards(items = newsItems) {
-  const filter = document.querySelector("#news-filter")?.value || "all";
-  renderCards("#news-grid", sortNewsItems(items), filter);
-}
-
-function sortEconomicsMetrics(metrics = []) {
-  const sortMode = document.querySelector("#economics-sort")?.value || "dashboard";
-  const copy = [...metrics];
-  if (sortMode === "title") return copy.sort((a, b) => String(a.label || "").localeCompare(String(b.label || "")));
-  if (sortMode === "source") return copy.sort((a, b) => String(a.item?.source || a.source || "").localeCompare(String(b.item?.source || b.source || "")));
-  if (sortMode === "live") return copy.sort((a, b) => Number(!!b.item) - Number(!!a.item));
-  return copy;
-}
-
-function sortSportsItems(items = []) {
-  const sortMode = document.querySelector("#sports-sort")?.value || "league";
-  const copy = [...items];
-  if (sortMode === "title") return copy.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
-  if (sortMode === "source") return copy.sort((a, b) => String(a.source || "").localeCompare(String(b.source || "")));
-  return copy.sort((a, b) => String(a.league || "").localeCompare(String(b.league || "")) || String(a.title || "").localeCompare(String(b.title || "")));
-}
-
-function renderSportsCards(items = sportsItems) {
-  const filter = document.querySelector("#league-filter")?.value || "all";
-  renderCards("#sports-grid", sortSportsItems(items), filter, "league");
-}
-
 function renderLiveCards(topic, items) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
   liveData[topic] = items;
-  const sortedItems = topic === "politics" ? sortGovernmentItems(filterGovernmentItems(items)) : items;
   renderLandingCards();
   if (topic === "news") {
-    renderNewsCards(mapNewsLiveToLanes(items));
+    renderCards("#news-grid", mapNewsLiveToLanes(items));
   }
   if (topic === "sports") {
-    renderSportsCards(mapSportsLiveToLanes(items));
+    renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
   }
   if (topic === "economics") {
-    renderMarketsFromLive(sortedItems);
+    renderMarketsFromLive(items);
   }
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
   if (staticGrid && topic !== "sports" && topic !== "news") {
@@ -769,7 +604,7 @@ function renderLiveCards(topic, items) {
     staticGrid.setAttribute("aria-hidden", "true");
   }
 
-  if (!sortedItems.length) {
+  if (!items.length) {
     container.innerHTML = "";
     return;
   }
@@ -778,7 +613,7 @@ function renderLiveCards(topic, items) {
       <article class="live-summary">
         <div>
           <p class="card-label">Live sports</p>
-          <h4>${sortedItems.length} live score and schedule item${sortedItems.length === 1 ? "" : "s"} applied to the watch cards below</h4>
+          <h4>${items.length} live score and schedule item${items.length === 1 ? "" : "s"} applied to the watch cards below</h4>
         </div>
         <span>${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
       </article>
@@ -789,7 +624,7 @@ function renderLiveCards(topic, items) {
 
   const sourceLabels = {
     news: "GDELT live news API",
-    politics: "Federal Register, Congress.gov, CourtListener, EAC, and Oversight.gov",
+    politics: "Federal Register API",
     economics: "Alpha Vantage, BLS, U.S. Treasury",
     sports: "ESPN scoreboard APIs",
   };
@@ -798,11 +633,11 @@ function renderLiveCards(topic, items) {
     <article class="live-summary">
       <div>
         <p class="card-label">Live ${topic}</p>
-        <h4>${sortedItems.length} fresh item${sortedItems.length === 1 ? "" : "s"} loaded from ${sourceLabels[topic] || "live source"}</h4>
+        <h4>${items.length} fresh item${items.length === 1 ? "" : "s"} loaded from ${sourceLabels[topic] || "live source"}</h4>
       </div>
       <span>${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
     </article>
-    ${sortedItems.map((item) => `
+    ${items.map((item) => `
       <article class="data-card live-card">
         <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
@@ -913,7 +748,7 @@ async function loadLiveData(topic, button) {
 function renderMarkets() {
   const container = document.querySelector("#market-grid");
   container.innerHTML = "";
-  sortEconomicsMetrics(marketMetrics).forEach((metric) => {
+  marketMetrics.forEach((metric) => {
     const card = document.createElement("article");
     card.className = "metric-card";
     card.innerHTML = `
@@ -945,7 +780,7 @@ function renderMarketsFromLive(items) {
     { label: "Oil", item: findItem("oil", "uso"), fallback: "Waiting on oil source." },
     { label: "Credit", item: findItem("credit", "hyg", "high yield"), fallback: "Waiting on credit source." },
   ];
-  sortEconomicsMetrics(liveMetrics).forEach(({ label, item, fallback }) => {
+  liveMetrics.forEach(({ label, item, fallback }) => {
     const card = document.createElement("article");
     card.className = "metric-card live-metric-card";
     card.innerHTML = `
@@ -1137,7 +972,7 @@ function renderReadiness() {
     { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
     { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
     { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
-    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} government and public-accountability items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
+    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} Federal Register items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
     { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded through backend.` : "Use Load Live Sports to call /api/live/sports.", state: liveData.sports.length ? "ready" : "partial" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
     { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },
@@ -1202,11 +1037,11 @@ chatForm.addEventListener("submit", async (event) => {
 
   try {
     const reply = await askOpenAI(prompt);
-    updateMessageText(thinkingMessage, reply);
+    thinkingMessage.textContent = reply;
     await recordChatMessage("ai", reply);
   } catch (error) {
     const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(prompt)}`;
-    updateMessageText(thinkingMessage, fallback);
+    thinkingMessage.textContent = fallback;
     await recordChatMessage("ai", fallback);
   } finally {
     chatInput.disabled = false;
@@ -1217,12 +1052,10 @@ chatForm.addEventListener("submit", async (event) => {
 
 exportChatButton.addEventListener("click", exportChatHistory);
 clearChatButton.addEventListener("click", async () => {
+  if (!window.confirm("Clear the saved personal assistant chat from this browser?")) return;
   conversationHistory = [];
-  localStorage.removeItem("trump-ai-chat-history");
   await saveChatHistory();
-  renderEmptyChatState();
-  chatInput.value = "";
-  chatInput.focus();
+  renderChatHistory();
 });
 
 document.querySelector("#theme-button").addEventListener("click", () => document.body.classList.toggle("dark"));
@@ -1230,29 +1063,13 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   refreshBrief();
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
-document.querySelector("#news-filter").addEventListener("change", () => renderNewsCards(liveData.news.length ? mapNewsLiveToLanes(liveData.news) : newsItems));
-document.querySelector("#news-sort").addEventListener("change", () => renderNewsCards(liveData.news.length ? mapNewsLiveToLanes(liveData.news) : newsItems));
-document.querySelector("#politics-filter").addEventListener("change", () => {
-  if (liveData.politics.length) renderLiveCards("politics", liveData.politics);
-  renderGovernmentCards();
-});
-document.querySelector("#politics-sort").addEventListener("change", () => {
-  if (liveData.politics.length) renderLiveCards("politics", liveData.politics);
-  renderGovernmentCards();
-});
-document.querySelector("#economics-sort").addEventListener("change", () => {
-  if (liveData.economics.length) {
-    renderMarketsFromLive(liveData.economics);
-    return;
-  }
-  renderMarkets();
-});
+document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
+document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
 document.querySelector("#league-filter").addEventListener("change", (event) => {
-  renderSportsCards(liveData.sports.length ? mapSportsLiveToLanes(liveData.sports) : sportsItems);
+  renderCards("#sports-grid", sportsItems, event.target.value, "league");
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
   if (sportsButton) loadLiveData("sports", sportsButton);
 });
-document.querySelector("#sports-sort").addEventListener("change", () => renderSportsCards(liveData.sports.length ? mapSportsLiveToLanes(liveData.sports) : sportsItems));
 document.querySelectorAll(".live-button").forEach((button) => {
   button.addEventListener("click", () => loadLiveData(button.dataset.live, button));
 });
@@ -1303,9 +1120,9 @@ document.querySelector("#save-settings-button").addEventListener("click", async 
 async function initializeApp() {
   await loadStoredState();
   refreshBrief();
-  renderNewsCards();
-  renderGovernmentCards();
-  renderSportsCards();
+  renderCards("#news-grid", newsItems);
+  renderCards("#politics-grid", politicsItems);
+  renderCards("#sports-grid", sportsItems, "all", "league");
   renderMarkets();
   renderTasks();
   renderAlertSummary();
