@@ -7,8 +7,8 @@ Use this before uploading files to GitHub Pages.
 3. In `index.html`, confirm these two lines use the newest matching version:
 
 ```html
-<link rel="stylesheet" href="styles.css?v=20260528-robot-copy" />
-<script src="app.js?v=20260528-robot-copy"></script>
+<link rel="stylesheet" href="styles.css?v=20260528-message-actions" />
+<script src="app.js?v=20260528-message-actions"></script>
 ```
 
 4. After GitHub finishes the commit, open the live site with a fresh URL:

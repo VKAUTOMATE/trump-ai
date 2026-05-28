@@ -395,12 +395,23 @@ function addMessage(role, text) {
   const textNode = document.createElement("p");
   textNode.className = "message-text";
   textNode.textContent = text;
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  const likeButton = createMessageAction("Like", "&#128077;");
+  const dislikeButton = createMessageAction("Dislike", "&#128078;");
   const copyButton = document.createElement("button");
   copyButton.className = "copy-message";
   copyButton.type = "button";
-  copyButton.textContent = "Copy";
+  copyButton.title = "Copy";
+  copyButton.setAttribute("aria-label", "Copy message");
+  copyButton.innerHTML = "&#10697;";
   copyButton.addEventListener("click", () => copyMessageText(text, copyButton));
-  bubble.append(textNode, copyButton);
+  const moreButton = createMessageAction("More", "&#8943;");
+  likeButton.addEventListener("click", () => toggleMessageReaction(likeButton, dislikeButton));
+  dislikeButton.addEventListener("click", () => toggleMessageReaction(dislikeButton, likeButton));
+  moreButton.addEventListener("click", () => copyMessageText(text, copyButton));
+  actions.append(likeButton, dislikeButton, copyButton, moreButton);
+  bubble.append(textNode, actions);
   message.append(avatar, bubble);
   chatLog.classList.remove("empty");
   chatLog.append(message);
@@ -408,8 +419,23 @@ function addMessage(role, text) {
   return message;
 }
 
+function createMessageAction(label, html) {
+  const button = document.createElement("button");
+  button.className = "message-action";
+  button.type = "button";
+  button.title = label;
+  button.setAttribute("aria-label", `${label} message`);
+  button.innerHTML = html;
+  return button;
+}
+
+function toggleMessageReaction(activeButton, otherButton) {
+  activeButton.classList.toggle("active");
+  otherButton.classList.remove("active");
+}
+
 async function copyMessageText(text, button) {
-  const original = button.textContent;
+  const original = button.innerHTML;
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -424,13 +450,13 @@ async function copyMessageText(text, button) {
       document.execCommand("copy");
       textarea.remove();
     }
-    button.textContent = "Copied";
+    button.innerHTML = "&#10003;";
     button.classList.add("copied");
   } catch {
-    button.textContent = "Copy failed";
+    button.innerHTML = "!";
   } finally {
     setTimeout(() => {
-      button.textContent = original;
+      button.innerHTML = original;
       button.classList.remove("copied");
     }, 1400);
   }

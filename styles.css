@@ -709,27 +709,49 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.message-actions {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.message-action,
 .copy-message {
-  align-self: end;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--primary-dark);
-  font-size: 12px;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 18px;
   font-weight: 900;
-  min-height: 28px;
-  padding: 4px 9px;
+  height: 30px;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0;
+  width: 30px;
 }
 
-.message.user .copy-message {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.35);
-  color: #fff;
-}
-
+.message-action:hover,
+.message-action.active,
+.copy-message:hover,
 .copy-message.copied {
-  background: rgba(22, 128, 91, 0.14);
-  color: var(--green);
+  background: rgba(204, 14, 28, 0.1);
+  color: var(--primary);
+}
+
+.message.user .message-action,
+.message.user .copy-message {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.message.user .message-action:hover,
+.message.user .message-action.active,
+.message.user .copy-message:hover,
+.message.user .copy-message.copied {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .chat-form {
