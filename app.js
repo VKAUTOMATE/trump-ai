@@ -673,19 +673,43 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
     });
 }
 
+function parseTimestampValue(value) {
+  if (!value) return 0;
+  const time = Date.parse(value);
+  if (!Number.isNaN(time)) return time;
+  if (/live|ready|latest|now/i.test(value)) return Date.now();
+  return 0;
+}
+
+function sortGovernmentItems(items = []) {
+  const sortMode = document.querySelector("#politics-sort")?.value || "latest";
+  const copy = [...items];
+  const byText = (key) => (a, b) => String(a[key] || "").localeCompare(String(b[key] || ""));
+  if (sortMode === "title") return copy.sort(byText("title"));
+  if (sortMode === "source") return copy.sort(byText("source"));
+  if (sortMode === "lane") return copy.sort((a, b) => String(a.category || a.source || "").localeCompare(String(b.category || b.source || "")));
+  return copy.sort((a, b) => parseTimestampValue(b.timestamp) - parseTimestampValue(a.timestamp));
+}
+
+function renderGovernmentCards() {
+  const filter = document.querySelector("#politics-filter")?.value || "all";
+  renderCards("#politics-grid", sortGovernmentItems(politicsItems), filter);
+}
+
 function renderLiveCards(topic, items) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
-  liveData[topic] = items;
+  const sortedItems = topic === "politics" ? sortGovernmentItems(items) : items;
+  liveData[topic] = sortedItems;
   renderLandingCards();
   if (topic === "news") {
-    renderCards("#news-grid", mapNewsLiveToLanes(items));
+    renderCards("#news-grid", mapNewsLiveToLanes(sortedItems));
   }
   if (topic === "sports") {
-    renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
+    renderCards("#sports-grid", mapSportsLiveToLanes(sortedItems), "all", "league");
   }
   if (topic === "economics") {
-    renderMarketsFromLive(items);
+    renderMarketsFromLive(sortedItems);
   }
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
   if (staticGrid && topic !== "sports" && topic !== "news") {
@@ -693,7 +717,7 @@ function renderLiveCards(topic, items) {
     staticGrid.setAttribute("aria-hidden", "true");
   }
 
-  if (!items.length) {
+  if (!sortedItems.length) {
     container.innerHTML = "";
     return;
   }
@@ -702,7 +726,7 @@ function renderLiveCards(topic, items) {
       <article class="live-summary">
         <div>
           <p class="card-label">Live sports</p>
-          <h4>${items.length} live score and schedule item${items.length === 1 ? "" : "s"} applied to the watch cards below</h4>
+          <h4>${sortedItems.length} live score and schedule item${sortedItems.length === 1 ? "" : "s"} applied to the watch cards below</h4>
         </div>
         <span>${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
       </article>
@@ -722,11 +746,11 @@ function renderLiveCards(topic, items) {
     <article class="live-summary">
       <div>
         <p class="card-label">Live ${topic}</p>
-        <h4>${items.length} fresh item${items.length === 1 ? "" : "s"} loaded from ${sourceLabels[topic] || "live source"}</h4>
+        <h4>${sortedItems.length} fresh item${sortedItems.length === 1 ? "" : "s"} loaded from ${sourceLabels[topic] || "live source"}</h4>
       </div>
       <span>${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
     </article>
-    ${items.map((item) => `
+    ${sortedItems.map((item) => `
       <article class="data-card live-card">
         <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
@@ -1155,7 +1179,11 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
-document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
+document.querySelector("#politics-filter").addEventListener("change", renderGovernmentCards);
+document.querySelector("#politics-sort").addEventListener("change", () => {
+  if (liveData.politics.length) renderLiveCards("politics", liveData.politics);
+  renderGovernmentCards();
+});
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
@@ -1212,7 +1240,7 @@ async function initializeApp() {
   await loadStoredState();
   refreshBrief();
   renderCards("#news-grid", newsItems);
-  renderCards("#politics-grid", politicsItems);
+  renderGovernmentCards();
   renderCards("#sports-grid", sportsItems, "all", "league");
   renderMarkets();
   renderTasks();

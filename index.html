@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260528-page-redesign" />
+    <link rel="stylesheet" href="styles.css?v=20260528-government-sort" />
   </head>
   <body>
     <div class="app-shell">
@@ -228,6 +228,12 @@
                 <option value="elections">Elections</option>
                 <option value="oversight">Oversight</option>
               </select>
+              <select id="politics-sort" aria-label="Sort politics and government">
+                <option value="latest">Latest first</option>
+                <option value="source">Source</option>
+                <option value="title">Title</option>
+                <option value="lane">Lane</option>
+              </select>
               <span class="badge">Nonpartisan</span>
               <button class="live-button" data-live="politics"><span class="button-icon">&#8623;</span>Load Live Politics</button>
             </div>
@@ -371,6 +377,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260528-page-redesign"></script>
+    <script src="app.js?v=20260528-government-sort"></script>
   </body>
 </html>
