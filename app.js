@@ -696,6 +696,15 @@ function renderGovernmentCards() {
   renderCards("#politics-grid", sortGovernmentItems(politicsItems), filter);
 }
 
+function sortEconomicsMetrics(metrics = []) {
+  const sortMode = document.querySelector("#economics-sort")?.value || "dashboard";
+  const copy = [...metrics];
+  if (sortMode === "title") return copy.sort((a, b) => String(a.label || "").localeCompare(String(b.label || "")));
+  if (sortMode === "source") return copy.sort((a, b) => String(a.item?.source || a.source || "").localeCompare(String(b.item?.source || b.source || "")));
+  if (sortMode === "live") return copy.sort((a, b) => Number(!!b.item) - Number(!!a.item));
+  return copy;
+}
+
 function renderLiveCards(topic, items) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
@@ -861,7 +870,7 @@ async function loadLiveData(topic, button) {
 function renderMarkets() {
   const container = document.querySelector("#market-grid");
   container.innerHTML = "";
-  marketMetrics.forEach((metric) => {
+  sortEconomicsMetrics(marketMetrics).forEach((metric) => {
     const card = document.createElement("article");
     card.className = "metric-card";
     card.innerHTML = `
@@ -893,7 +902,7 @@ function renderMarketsFromLive(items) {
     { label: "Oil", item: findItem("oil", "uso"), fallback: "Waiting on oil source." },
     { label: "Credit", item: findItem("credit", "hyg", "high yield"), fallback: "Waiting on credit source." },
   ];
-  liveMetrics.forEach(({ label, item, fallback }) => {
+  sortEconomicsMetrics(liveMetrics).forEach(({ label, item, fallback }) => {
     const card = document.createElement("article");
     card.className = "metric-card live-metric-card";
     card.innerHTML = `
@@ -1180,9 +1189,12 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
 document.querySelector("#politics-filter").addEventListener("change", renderGovernmentCards);
-document.querySelector("#politics-sort").addEventListener("change", () => {
-  if (liveData.politics.length) renderLiveCards("politics", liveData.politics);
-  renderGovernmentCards();
+document.querySelector("#economics-sort").addEventListener("change", () => {
+  if (liveData.economics.length) {
+    renderMarketsFromLive(liveData.economics);
+    return;
+  }
+  renderMarkets();
 });
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
