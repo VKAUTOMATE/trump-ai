@@ -1,4 +1,4 @@
-const views = {
+﻿const views = {
   command: "Command Center",
   automation: "Automation Builder",
   news: "News Briefing",
@@ -89,6 +89,8 @@ const defaultSettings = {
 const chatLog = document.querySelector("#chat-log");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
+const exportChatButton = document.querySelector("#export-chat-button");
+const clearChatButton = document.querySelector("#clear-chat-button");
 const viewTitle = document.querySelector("#view-title");
 const dailyBrief = document.querySelector("#daily-brief");
 const taskList = document.querySelector("#task-list");
@@ -100,7 +102,7 @@ const landingLiveGrid = document.querySelector("#landing-live-grid");
 
 let tasks = [];
 let settings = { ...defaultSettings };
-const conversationHistory = [];
+let conversationHistory = [];
 const liveData = {
   news: [],
   economics: [],
@@ -206,17 +208,20 @@ async function dbSet(key, value) {
 
 async function loadStoredState() {
   try {
-    const [storedTasks, storedSettings] = await Promise.all([dbGet("tasks"), dbGet("settings")]);
+    const [storedTasks, storedSettings, storedChat] = await Promise.all([dbGet("tasks"), dbGet("settings"), dbGet("chatHistory")]);
     const legacyTasks = JSON.parse(localStorage.getItem("trump-ai-tasks") || "null");
     const legacySettings = JSON.parse(localStorage.getItem("trump-ai-settings") || "null");
+    const legacyChat = JSON.parse(localStorage.getItem("trump-ai-chat-history") || "null");
     tasks = (storedTasks || legacyTasks || defaultTasks).map(normalizeTask);
     settings = { ...defaultSettings, ...(storedSettings || legacySettings || {}) };
     settings.modelName = normalizeModelName(settings.modelName);
-    await Promise.all([dbSet("tasks", tasks), dbSet("settings", settings)]);
+    conversationHistory = sanitizeChatHistory(storedChat || legacyChat || []);
+    await Promise.all([dbSet("tasks", tasks), dbSet("settings", settings), dbSet("chatHistory", conversationHistory)]);
   } catch (error) {
     tasks = (JSON.parse(localStorage.getItem("trump-ai-tasks") || "null") || defaultTasks).map(normalizeTask);
     settings = { ...defaultSettings, ...(JSON.parse(localStorage.getItem("trump-ai-settings") || "null") || {}) };
     settings.modelName = normalizeModelName(settings.modelName);
+    conversationHistory = sanitizeChatHistory(JSON.parse(localStorage.getItem("trump-ai-chat-history") || "[]"));
     addMessage("ai", `Database fallback active: ${error.message}`);
   }
 }
@@ -236,6 +241,28 @@ async function saveSettings() {
     await dbSet("settings", settings);
   } catch (error) {
     addMessage("ai", `Settings saved locally, but database sync failed: ${error.message}`);
+  }
+}
+
+function sanitizeChatHistory(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry) => ["user", "ai"].includes(entry?.role) && typeof entry.text === "string" && entry.text.trim())
+    .slice(-200)
+    .map((entry) => ({
+      role: entry.role,
+      text: entry.text,
+      timestamp: entry.timestamp || "",
+    }));
+}
+
+async function saveChatHistory() {
+  conversationHistory = sanitizeChatHistory(conversationHistory);
+  localStorage.setItem("trump-ai-chat-history", JSON.stringify(conversationHistory));
+  try {
+    await dbSet("chatHistory", conversationHistory);
+  } catch (error) {
+    console.warn("Chat history saved locally, but database sync failed:", error);
   }
 }
 
@@ -274,7 +301,7 @@ function renderLandingCards() {
   const lastTaskCheck = tasks.map((task) => task.lastChecked).filter(Boolean).slice(-1)[0];
   const cards = [
     {
-      icon: "◫",
+      icon: "\u25a3",
       label: "News",
       title: liveData.news.length ? `${liveData.news.length} live headlines` : "Headlines queued",
       text: liveData.news[0]?.title || "GDELT news route ready for the next live refresh.",
@@ -284,7 +311,7 @@ function renderLandingCards() {
       time: liveData.news[0]?.timestamp || "Next refresh",
     },
     {
-      icon: "▴",
+      icon: "\u25b5",
       label: "Economics",
       title: liveData.economics.length ? `${liveData.economics.length} market signals` : "Macro lanes armed",
       text: liveData.economics[0]?.title || "Stocks, inflation, labor, Treasury, oil, dollar, and credit are wired.",
@@ -294,7 +321,7 @@ function renderLandingCards() {
       time: liveData.economics[0]?.timestamp || "Next refresh",
     },
     {
-      icon: "⚖",
+      icon: "\u2696",
       label: "Politics",
       title: liveData.politics.length ? `${liveData.politics.length} policy updates` : "Policy feed ready",
       text: liveData.politics[0]?.title || "Federal Register route ready for agency rules and notices.",
@@ -304,7 +331,7 @@ function renderLandingCards() {
       time: liveData.politics[0]?.timestamp || "Next refresh",
     },
     {
-      icon: "●",
+      icon: "\u25cf",
       label: "Sports",
       title: liveData.sports.length ? `${liveData.sports.length} score items` : "Scoreboard ready",
       text: liveData.sports[0]?.title || "NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, and boxing are connected.",
@@ -314,7 +341,7 @@ function renderLandingCards() {
       time: liveData.sports[0]?.timestamp || "Next refresh",
     },
     {
-      icon: "⏱",
+      icon: "\u23f1",
       label: "Automation",
       title: `${activeAlerts} active alerts`,
       text: tasks.find((task) => task.active)?.focus || "Saved schedules, triggers, email/text routes, and browser database storage.",
@@ -324,7 +351,7 @@ function renderLandingCards() {
       time: lastTaskCheck || "Waiting for run",
     },
     {
-      icon: "⚙",
+      icon: "\u2699",
       label: "Profile",
       title: `${savedPreferences} saved preferences`,
       text: settings.homeRegion || settings.favoriteTeams || settings.marketWatchlist || "Add teams, tickers, topics, and region.",
@@ -363,6 +390,53 @@ function addMessage(role, text) {
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
   return message;
+}
+
+function renderChatHistory() {
+  chatLog.innerHTML = "";
+  if (!conversationHistory.length) {
+    addMessage("ai", "Welcome to TRUMP AI. Ask me anything: general questions, writing, school help, coding, planning, research, saved alerts, news, economics, politics, and sports all work from this command center.");
+    return;
+  }
+  conversationHistory.forEach((entry) => addMessage(entry.role, entry.text));
+}
+
+async function recordChatMessage(role, text) {
+  conversationHistory.push({ role, text, timestamp: new Date().toISOString() });
+  await saveChatHistory();
+}
+
+function buildChatExport() {
+  const entries = conversationHistory.length
+    ? conversationHistory
+    : [...chatLog.querySelectorAll(".message")].map((message) => ({
+        role: message.classList.contains("user") ? "user" : "ai",
+        text: message.textContent,
+        timestamp: "",
+      }));
+  const lines = [
+    "# TRUMP AI Personal Assistant Chat",
+    "",
+    `Exported: ${new Date().toLocaleString()}`,
+    "",
+    ...entries.map((entry) => {
+      const speaker = entry.role === "user" ? "You" : "Assistant";
+      const time = entry.timestamp ? ` (${new Date(entry.timestamp).toLocaleString()})` : "";
+      return `## ${speaker}${time}\n\n${entry.text}`;
+    }),
+  ];
+  return lines.join("\n\n");
+}
+
+function exportChatHistory() {
+  const blob = new Blob([buildChatExport()], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `trump-ai-chat-${new Date().toISOString().slice(0, 10)}.md`;
+  link.click();
+  URL.revokeObjectURL(url);
+  addMessage("ai", "Chat exported as a Markdown file.");
 }
 
 function setLoadingButton(button, isLoading, label) {
@@ -954,7 +1028,7 @@ chatForm.addEventListener("submit", async (event) => {
   const prompt = chatInput.value.trim();
   if (!prompt) return;
   addMessage("user", prompt);
-  conversationHistory.push({ role: "user", text: prompt });
+  await recordChatMessage("user", prompt);
   chatInput.value = "";
   chatInput.disabled = true;
   const sendButton = chatForm.querySelector("button");
@@ -964,16 +1038,24 @@ chatForm.addEventListener("submit", async (event) => {
   try {
     const reply = await askOpenAI(prompt);
     thinkingMessage.textContent = reply;
-    conversationHistory.push({ role: "ai", text: reply });
+    await recordChatMessage("ai", reply);
   } catch (error) {
     const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(prompt)}`;
     thinkingMessage.textContent = fallback;
-    conversationHistory.push({ role: "ai", text: fallback });
+    await recordChatMessage("ai", fallback);
   } finally {
     chatInput.disabled = false;
     setLoadingButton(sendButton, false);
     chatInput.focus();
   }
+});
+
+exportChatButton.addEventListener("click", exportChatHistory);
+clearChatButton.addEventListener("click", async () => {
+  if (!window.confirm("Clear the saved personal assistant chat from this browser?")) return;
+  conversationHistory = [];
+  await saveChatHistory();
+  renderChatHistory();
 });
 
 document.querySelector("#theme-button").addEventListener("click", () => document.body.classList.toggle("dark"));
@@ -1047,7 +1129,7 @@ async function initializeApp() {
   renderSettings();
   renderLandingCards();
   wirePreferenceAutosave();
-  addMessage("ai", "Welcome to TRUMP AI. Ask me anything: general questions, writing, school help, coding, planning, research, saved alerts, news, economics, politics, and sports all work from this command center.");
+  renderChatHistory();
 }
 
 initializeApp();
