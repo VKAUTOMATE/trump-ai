@@ -18,12 +18,12 @@ const newsItems = [
 ];
 
 const politicsItems = [
-  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
-  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
-  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress data route ready", timestamp: "Backend-ready lane" },
-  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "Court source lane ready", timestamp: "Backend-ready lane" },
-  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "Election source lane ready", timestamp: "Backend-ready lane" },
-  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Verification workflow", timestamp: "Live-ready lane" },
+  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Live now", status: "live" },
+  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Live now", status: "live" },
+  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress.gov RSS route", timestamp: "Live route ready", status: "live" },
+  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "CourtListener route", timestamp: "Live route ready", status: "live" },
+  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "EAC and Vote.gov route", timestamp: "Live route ready", status: "live" },
+  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Oversight.gov route", timestamp: "Live route ready", status: "live" },
 ];
 
 const sportsItems = [
@@ -133,11 +133,11 @@ async function fetchBackendJson(path, options = {}) {
 }
 
 const domainPrompts = {
-  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, tutor, writer, planner, and briefing system. You are not Donald Trump and must not impersonate any real person. The command box is open-ended: the user can ask any normal question, not only news, economics, politics, government, sports, or automation. Help with school, coding, business, writing, math, everyday decisions, travel, food, career, health education, technology, history, creativity, planning, explanations, summaries, comparisons, and general knowledge. Always answer the user's actual question first. Never say you are limited to the dashboard categories. The backend may provide live context for sports, politics, government, public issues, economics, or news; use it when present and name its limits. Do not say "as of my last knowledge update." If live context is insufficient, say the loaded sources do not confirm the answer and name the best source to check. Be clear, practical, and conversational. Ask a brief follow-up only when needed. Mark confirmed facts separately from opinion, inference, or analysis when the topic calls for it. Avoid fabricating citations, prices, scores, polls, or breaking news.`,
+  base: `You are TRUMP AI, a neutral, source-aware general assistant, research partner, tutor, writer, planner, and briefing system. You are not Donald Trump and must not impersonate any real person. The command box is open-ended: the user can ask any normal question, not only news, economics, politics, government, sports, or automation. Help with school, coding, business, writing, math, everyday decisions, travel, food, career, health education, technology, history, creativity, planning, explanations, summaries, comparisons, and general knowledge. Always answer the user's actual question first. Never say you are limited to the dashboard categories. The backend may provide live context for sports, politics, government, public issues, economics, or news; use it when present and name its limits. Do not say "as of my last knowledge update." If live context is insufficient, say the loaded sources do not confirm the answer and name the best source to check. Be clear, practical, and conversational. Ask a brief follow-up only when needed. Mark confirmed facts separately from opinion, inference, or analysis when the topic calls for it. Avoid fabricating citations, prices, scores, polls, or breaking news. For sports result questions, include the opponent or winner, final score, round/date, and source when known; if any of those details are not confirmed by loaded context, say exactly what is missing instead of giving a partial answer.`,
   news: `News mode: prioritize verified events, timestamps, source quality, affected people or institutions, and likely second-order impact. Separate confirmed facts from uncertainty. Ask for live source links when needed.`,
   economics: `Economics mode: explain macro signals, market context, inflation, labor, rates, credit, commodities, and consumer data. Avoid financial advice. Present assumptions, risks, and data that would change the view.`,
   politics: `Politics and government mode: stay nonpartisan. Explain policy, institutions, agencies, elections, legislation, courts, regulations, public issues, and public opinion with neutral framing. Flag claims that need primary-source verification.`,
-  sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results.`,
+  sports: `Sports mode: cover schedules, scores, injuries, matchups, standings, roster news, and betting context without guaranteeing outcomes. Clearly separate analysis from confirmed results. If the user asks who won, who lost, the opponent, or the score, answer those details first and cite the loaded source. If the loaded context does not include the score or opponent, say so and name the official league, tournament, or ESPN scoreboard to check.`,
   automation: `Automation planning mode: convert any user goal into saved alerts, monitors, reminders, triggers, cadence, sources, thresholds, notification routes, and output formats. Be specific about what can run now in this browser app versus what needs a backend scheduler, database, email, or text-message provider.`,
   verify: `Verification mode: evaluate the claim cautiously. Break the answer into Claim, What is known, What needs verification, Best sources to check, and Confidence. Do not invent citations. If live source data is missing, say that primary-source checking is required.`,
 };
@@ -386,18 +386,100 @@ function renderLandingCards() {
 function addMessage(role, text) {
   const message = document.createElement("div");
   message.className = `message ${role}`;
-  message.textContent = text;
+  const avatar = document.createElement("span");
+  avatar.className = "message-avatar";
+  avatar.setAttribute("aria-hidden", "true");
+  avatar.textContent = role === "user" ? "YOU" : "AI";
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+  const textNode = document.createElement("p");
+  textNode.className = "message-text";
+  textNode.textContent = text;
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  const likeButton = createMessageAction("Like", "&#128077;");
+  const dislikeButton = createMessageAction("Dislike", "&#128078;");
+  const copyButton = document.createElement("button");
+  copyButton.className = "copy-message";
+  copyButton.type = "button";
+  copyButton.title = "Copy";
+  copyButton.setAttribute("aria-label", "Copy message");
+  copyButton.innerHTML = "&#10697;";
+  copyButton.addEventListener("click", () => copyMessageText(text, copyButton));
+  const moreButton = createMessageAction("More", "&#8943;");
+  likeButton.addEventListener("click", () => toggleMessageReaction(likeButton, dislikeButton));
+  dislikeButton.addEventListener("click", () => toggleMessageReaction(dislikeButton, likeButton));
+  moreButton.addEventListener("click", () => copyMessageText(text, copyButton));
+  actions.append(likeButton, dislikeButton, copyButton, moreButton);
+  bubble.append(textNode, actions);
+  message.append(avatar, bubble);
+  chatLog.classList.remove("empty");
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
   return message;
 }
 
+function createMessageAction(label, html) {
+  const button = document.createElement("button");
+  button.className = "message-action";
+  button.type = "button";
+  button.title = label;
+  button.setAttribute("aria-label", `${label} message`);
+  button.innerHTML = html;
+  return button;
+}
+
+function toggleMessageReaction(activeButton, otherButton) {
+  activeButton.classList.toggle("active");
+  otherButton.classList.remove("active");
+}
+
+async function copyMessageText(text, button) {
+  const original = button.innerHTML;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.append(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    button.innerHTML = "&#10003;";
+    button.classList.add("copied");
+  } catch {
+    button.innerHTML = "!";
+  } finally {
+    setTimeout(() => {
+      button.innerHTML = original;
+      button.classList.remove("copied");
+    }, 1400);
+  }
+}
+
+function renderEmptyChatState() {
+  chatLog.innerHTML = `
+    <div class="chat-empty">
+      <p class="card-label">Command ready</p>
+      <h4>Ask, verify, write, or search live context</h4>
+      <p>For current scores, markets, policy, or news, ask the exact question and I will use the backend context when it is available. If a fact is missing, I will name the source to check.</p>
+    </div>
+  `;
+  chatLog.classList.add("empty");
+}
+
 function renderChatHistory() {
   chatLog.innerHTML = "";
   if (!conversationHistory.length) {
-    addMessage("ai", "Welcome to TRUMP AI. Ask me anything: general questions, writing, school help, coding, planning, research, saved alerts, news, economics, politics, and sports all work from this command center.");
+    renderEmptyChatState();
     return;
   }
+  chatLog.classList.remove("empty");
   conversationHistory.forEach((entry) => addMessage(entry.role, entry.text));
 }
 
@@ -411,7 +493,7 @@ function buildChatExport() {
     ? conversationHistory
     : [...chatLog.querySelectorAll(".message")].map((message) => ({
         role: message.classList.contains("user") ? "user" : "ai",
-        text: message.textContent,
+        text: message.querySelector(".message-text")?.textContent || message.textContent,
         timestamp: "",
       }));
   const lines = [
@@ -568,14 +650,21 @@ async function askOpenAI(prompt) {
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
   const container = document.querySelector(containerSelector);
   const fallbackSource = containerSelector.includes("sports") ? "sports source lane" : containerSelector.includes("politics") ? "government source lane" : "news source lane";
+  const statusLabels = {
+    live: "Live Route",
+    planned: "Planned Route",
+    manual: "Manual Check",
+  };
   container.innerHTML = "";
   items
     .filter((item) => filter === "all" || item[filterKey] === filter)
     .forEach((item) => {
       const card = document.createElement("article");
+      const status = item.url ? "fact" : item.status || "analysis";
+      const label = item.url ? "Fact Source" : statusLabels[item.status] || "Source Lane";
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge ${item.url ? "fact" : "analysis"}">${item.url ? "Fact Source" : "Source Lane"}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
+        <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
         <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
@@ -624,7 +713,7 @@ function renderLiveCards(topic, items) {
 
   const sourceLabels = {
     news: "GDELT live news API",
-    politics: "Federal Register API",
+    politics: "Federal Register, Congress.gov, CourtListener, EAC, and Oversight.gov",
     economics: "Alpha Vantage, BLS, U.S. Treasury",
     sports: "ESPN scoreboard APIs",
   };
@@ -972,7 +1061,7 @@ function renderReadiness() {
     { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
     { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
     { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
-    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} Federal Register items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
+    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} government and public-accountability items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
     { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded through backend.` : "Use Load Live Sports to call /api/live/sports.", state: liveData.sports.length ? "ready" : "partial" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
     { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },
@@ -1052,10 +1141,12 @@ chatForm.addEventListener("submit", async (event) => {
 
 exportChatButton.addEventListener("click", exportChatHistory);
 clearChatButton.addEventListener("click", async () => {
-  if (!window.confirm("Clear the saved personal assistant chat from this browser?")) return;
   conversationHistory = [];
+  localStorage.removeItem("trump-ai-chat-history");
   await saveChatHistory();
-  renderChatHistory();
+  renderEmptyChatState();
+  chatInput.value = "";
+  chatInput.focus();
 });
 
 document.querySelector("#theme-button").addEventListener("click", () => document.body.classList.toggle("dark"));
