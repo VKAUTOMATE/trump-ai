@@ -31,7 +31,7 @@
           <button class="nav-item" data-view="automation"><span class="nav-icon">&#9201;</span><span>Automation</span><small>Tasks and alerts</small></button>
           <button class="nav-item" data-view="news"><span class="nav-icon">&#9635;</span><span>News</span><small>Briefing desk</small></button>
           <button class="nav-item" data-view="markets"><span class="nav-icon">&#9653;</span><span>Economics</span><small>Macro and markets</small></button>
-          <button class="nav-item" data-view="politics"><span class="nav-icon">&#9878;</span><span>Politics</span><small>Policy tracker</small></button>
+          <button class="nav-item" data-view="politics"><span class="nav-icon">&#9878;</span><span>Government</span><small>Public source tracker</small></button>
           <button class="nav-item" data-view="sports"><span class="nav-icon">&#9679;</span><span>Sports</span><small>Scores and storylines</small></button>
           <button class="nav-item" data-view="settings"><span class="nav-icon">&#9881;</span><span>Settings</span><small>Data sources</small></button>
         </nav>
@@ -89,7 +89,7 @@
             </article>
             <article class="dashboard-tile" data-jump="politics">
               <span class="tile-icon">&#9878;</span>
-              <div><strong>Politics</strong><p>Federal Register notices, agencies, publication dates, and source links.</p></div>
+              <div><strong>Government</strong><p>Federal Register notices, agencies, publication dates, and source links.</p></div>
               <button type="button">Open</button>
             </article>
             <article class="dashboard-tile" data-jump="sports">
@@ -147,7 +147,7 @@
                   <button data-prompt="Verify this claim: ">Verify claim</button>
                   <button data-prompt="Give me a five point news briefing.">News briefing</button>
                   <button data-prompt="Create an automation to watch inflation, jobs, and Fed decisions.">Macro monitor</button>
-                  <button data-prompt="Summarize political risks for the week.">Politics risk</button>
+                  <button data-prompt="Summarize government and public-source risks for the week.">Government watch</button>
                   <button data-prompt="What sports stories should I watch tonight?">Sports slate</button>
                 </div>
               </article>
@@ -216,8 +216,8 @@
         <section id="politics" class="view">
           <div class="section-header">
             <div>
-              <p class="eyebrow">Politics</p>
-              <h3>Policy and Election Tracker</h3>
+              <p class="eyebrow">Government</p>
+              <h3>Government Source Tracker</h3>
             </div>
             <div class="section-actions">
               <select id="politics-filter" aria-label="Filter politics and government">
@@ -229,7 +229,7 @@
                 <option value="oversight">Oversight</option>
               </select>
               <span class="badge">Nonpartisan</span>
-              <button class="live-button" data-live="politics"><span class="button-icon">&#8623;</span>Load Live Politics</button>
+              <button class="live-button" data-live="politics"><span class="button-icon">&#8623;</span>Load Live Government</button>
             </div>
           </div>
           <div id="politics-live-grid" class="live-grid"></div>
