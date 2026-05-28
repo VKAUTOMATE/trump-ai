@@ -53,14 +53,14 @@ const sportsItems = [
 ];
 
 const marketMetrics = [
-  { label: "Inflation trend", value: "Live-ready", tone: "flat", note: "Load live economics to pull CPI, PCE, wage, rent, and energy source data." },
-  { label: "Labor market", value: "Live-ready", tone: "flat", note: "Load live economics to pull payrolls, claims, unemployment, quits, and participation." },
-  { label: "Fed stance", value: "Live-ready", tone: "flat", note: "Load live economics to pull rates, Treasury data, Fed signals, and credit stress." },
-  { label: "Consumer", value: "Live-ready", tone: "flat", note: "Load live economics to pull retail, sentiment, delinquency, and savings context." },
-  { label: "Equities", value: "Live-ready", tone: "flat", note: "Load live economics to pull market quotes, breadth context, and earnings pressure." },
-  { label: "Dollar", value: "Live-ready", tone: "flat", note: "Load live economics to pull rate differentials, dollar strength, and global stress signals." },
-  { label: "Oil", value: "Live-ready", tone: "flat", note: "Load live economics to pull commodity, inflation, and supply-demand signals." },
-  { label: "Credit", value: "Live-ready", tone: "flat", note: "Load live economics to pull spreads, refinancing pressure, and stress indicators." },
+  { category: "inflation", label: "Inflation trend", value: "Live-ready", tone: "flat", note: "Load live economics to pull CPI, PCE, wage, rent, and energy source data." },
+  { category: "labor", label: "Labor market", value: "Live-ready", tone: "flat", note: "Load live economics to pull payrolls, claims, unemployment, quits, and participation." },
+  { category: "rates", label: "Fed stance", value: "Live-ready", tone: "flat", note: "Load live economics to pull rates, Treasury data, Fed signals, and credit stress." },
+  { category: "consumer", label: "Consumer", value: "Live-ready", tone: "flat", note: "Load live economics to pull retail, sentiment, delinquency, and savings context." },
+  { category: "equities", label: "Equities", value: "Live-ready", tone: "flat", note: "Load live economics to pull market quotes, breadth context, and earnings pressure." },
+  { category: "dollar", label: "Dollar", value: "Live-ready", tone: "flat", note: "Load live economics to pull rate differentials, dollar strength, and global stress signals." },
+  { category: "oil", label: "Oil", value: "Live-ready", tone: "flat", note: "Load live economics to pull commodity, inflation, and supply-demand signals." },
+  { category: "credit", label: "Credit", value: "Live-ready", tone: "flat", note: "Load live economics to pull spreads, refinancing pressure, and stress indicators." },
 ];
 
 const defaultTasks = [
@@ -799,7 +799,8 @@ async function loadLiveNews() {
 }
 
 async function loadLiveEconomics() {
-  return (await fetchBackendJson("/api/live/economics")).items || [];
+  const selectedCategory = document.querySelector("#economics-filter")?.value || "all";
+  return (await fetchBackendJson(`/api/live/economics?category=${encodeURIComponent(selectedCategory)}`)).items || [];
 }
 
 async function loadLivePolitics() {
@@ -836,8 +837,11 @@ async function loadLiveData(topic, button) {
 
 function renderMarkets() {
   const container = document.querySelector("#market-grid");
+  const selectedCategory = document.querySelector("#economics-filter")?.value || "all";
   container.innerHTML = "";
-  marketMetrics.forEach((metric) => {
+  marketMetrics
+    .filter((metric) => selectedCategory === "all" || metric.category === selectedCategory)
+    .forEach((metric) => {
     const card = document.createElement("article");
     card.className = "metric-card";
     card.innerHTML = `
@@ -854,22 +858,25 @@ function renderMarkets() {
 function renderMarketsFromLive(items) {
   const container = document.querySelector("#market-grid");
   if (!container) return;
+  const selectedCategory = document.querySelector("#economics-filter")?.value || "all";
   container.innerHTML = "";
   const findItem = (...patterns) => items.find((item) => {
     const haystack = `${item.title || ""} ${item.text || ""} ${item.source || ""}`.toLowerCase();
     return patterns.some((pattern) => haystack.includes(pattern));
   });
   const liveMetrics = [
-    { label: "Inflation trend", item: findItem("inflation", "cpi"), fallback: "Waiting on BLS inflation source." },
-    { label: "Labor market", item: findItem("jobs", "payroll", "unemployment"), fallback: "Waiting on BLS labor source." },
-    { label: "Fed stance", item: findItem("treasury", "rate"), fallback: "Waiting on Treasury rate source." },
-    { label: "Consumer", item: findItem("consumer discretionary", "xly"), fallback: "Waiting on consumer market source." },
-    { label: "Equities", item: findItem("s&p", "nasdaq", "stock quote", "spy", "qqq", "ibm"), fallback: "Waiting on equity quote source." },
-    { label: "Dollar", item: findItem("dollar", "uup"), fallback: "Waiting on dollar source." },
-    { label: "Oil", item: findItem("oil", "uso"), fallback: "Waiting on oil source." },
-    { label: "Credit", item: findItem("credit", "hyg", "high yield"), fallback: "Waiting on credit source." },
+    { category: "inflation", label: "Inflation trend", item: findItem("inflation", "cpi"), fallback: "Waiting on BLS inflation source." },
+    { category: "labor", label: "Labor market", item: findItem("jobs", "payroll", "unemployment"), fallback: "Waiting on BLS labor source." },
+    { category: "rates", label: "Fed stance", item: findItem("treasury", "rate"), fallback: "Waiting on Treasury rate source." },
+    { category: "consumer", label: "Consumer", item: findItem("consumer discretionary", "xly"), fallback: "Waiting on consumer market source." },
+    { category: "equities", label: "Equities", item: findItem("s&p", "nasdaq", "stock quote", "spy", "qqq", "ibm"), fallback: "Waiting on equity quote source." },
+    { category: "dollar", label: "Dollar", item: findItem("dollar", "uup"), fallback: "Waiting on dollar source." },
+    { category: "oil", label: "Oil", item: findItem("oil", "uso"), fallback: "Waiting on oil source." },
+    { category: "credit", label: "Credit", item: findItem("credit", "hyg", "high yield"), fallback: "Waiting on credit source." },
   ];
-  liveMetrics.forEach(({ label, item, fallback }) => {
+  liveMetrics
+    .filter((metric) => selectedCategory === "all" || metric.category === selectedCategory)
+    .forEach(({ label, item, fallback }) => {
     const card = document.createElement("article");
     card.className = "metric-card live-metric-card";
     card.innerHTML = `
@@ -1155,6 +1162,15 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
+document.querySelector("#economics-filter").addEventListener("change", () => {
+  if (liveData.economics.length) {
+    renderMarketsFromLive(liveData.economics);
+    const economicsButton = document.querySelector('.live-button[data-live="economics"]');
+    if (economicsButton) loadLiveData("economics", economicsButton);
+    return;
+  }
+  renderMarkets();
+});
 document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");

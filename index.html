@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260528-page-redesign" />
+    <link rel="stylesheet" href="styles.css?v=20260528-economics-sort" />
   </head>
   <body>
     <div class="app-shell">
@@ -205,6 +205,17 @@
               <h3>Macro Dashboard</h3>
             </div>
             <div class="section-actions">
+              <select id="economics-filter" aria-label="Filter economics">
+                <option value="all">All economics</option>
+                <option value="inflation">Inflation</option>
+                <option value="labor">Labor</option>
+                <option value="rates">Fed / Rates</option>
+                <option value="consumer">Consumer</option>
+                <option value="equities">Equities</option>
+                <option value="dollar">Dollar</option>
+                <option value="oil">Oil</option>
+                <option value="credit">Credit</option>
+              </select>
               <button id="simulate-markets"><span class="button-icon">&#8635;</span>Simulate Update</button>
               <button class="live-button" data-live="economics"><span class="button-icon">&#8623;</span>Load Live Economics</button>
             </div>
@@ -371,6 +382,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260528-page-redesign"></script>
+    <script src="app.js?v=20260528-economics-sort"></script>
   </body>
 </html>
