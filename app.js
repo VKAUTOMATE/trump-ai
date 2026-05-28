@@ -466,8 +466,8 @@ function renderEmptyChatState() {
   chatLog.innerHTML = `
     <div class="chat-empty">
       <p class="card-label">Command ready</p>
-      <h4>Start a clean request</h4>
-      <p>Ask a question, load live data first, or use a quick prompt. Saved old answers will not appear here after you start a new chat.</p>
+      <h4>Ask, verify, write, or search live context</h4>
+      <p>For current scores, markets, policy, or news, ask the exact question and I will use the backend context when it is available. If a fact is missing, I will name the source to check.</p>
     </div>
   `;
   chatLog.classList.add("empty");
