@@ -386,11 +386,54 @@ function renderLandingCards() {
 function addMessage(role, text) {
   const message = document.createElement("div");
   message.className = `message ${role}`;
-  message.textContent = text;
+  const avatar = document.createElement("span");
+  avatar.className = "message-avatar";
+  avatar.setAttribute("aria-hidden", "true");
+  avatar.textContent = role === "user" ? "YOU" : "AI";
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+  const textNode = document.createElement("p");
+  textNode.className = "message-text";
+  textNode.textContent = text;
+  const copyButton = document.createElement("button");
+  copyButton.className = "copy-message";
+  copyButton.type = "button";
+  copyButton.textContent = "Copy";
+  copyButton.addEventListener("click", () => copyMessageText(text, copyButton));
+  bubble.append(textNode, copyButton);
+  message.append(avatar, bubble);
   chatLog.classList.remove("empty");
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
   return message;
+}
+
+async function copyMessageText(text, button) {
+  const original = button.textContent;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.append(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    button.textContent = "Copied";
+    button.classList.add("copied");
+  } catch {
+    button.textContent = "Copy failed";
+  } finally {
+    setTimeout(() => {
+      button.textContent = original;
+      button.classList.remove("copied");
+    }, 1400);
+  }
 }
 
 function renderEmptyChatState() {
@@ -424,7 +467,7 @@ function buildChatExport() {
     ? conversationHistory
     : [...chatLog.querySelectorAll(".message")].map((message) => ({
         role: message.classList.contains("user") ? "user" : "ai",
-        text: message.textContent,
+        text: message.querySelector(".message-text")?.textContent || message.textContent,
         timestamp: "",
       }));
   const lines = [
