@@ -18,12 +18,12 @@ const newsItems = [
 ];
 
 const politicsItems = [
-  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
-  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Click Load Live Politics" },
-  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress data route ready", timestamp: "Backend-ready lane" },
-  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "Court source lane ready", timestamp: "Backend-ready lane" },
-  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "Election source lane ready", timestamp: "Backend-ready lane" },
-  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Verification workflow", timestamp: "Live-ready lane" },
+  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Live now", status: "live" },
+  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Live now", status: "live" },
+  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Needs Congress.gov or GovInfo route", timestamp: "Planned next", status: "planned" },
+  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "Needs court source route", timestamp: "Planned next", status: "planned" },
+  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "Needs election source route", timestamp: "Planned next", status: "planned" },
+  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Verification workflow", timestamp: "Manual verify mode", status: "manual" },
 ];
 
 const sportsItems = [
@@ -568,14 +568,21 @@ async function askOpenAI(prompt) {
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
   const container = document.querySelector(containerSelector);
   const fallbackSource = containerSelector.includes("sports") ? "sports source lane" : containerSelector.includes("politics") ? "government source lane" : "news source lane";
+  const statusLabels = {
+    live: "Live Route",
+    planned: "Planned Route",
+    manual: "Manual Check",
+  };
   container.innerHTML = "";
   items
     .filter((item) => filter === "all" || item[filterKey] === filter)
     .forEach((item) => {
       const card = document.createElement("article");
+      const status = item.url ? "fact" : item.status || "analysis";
+      const label = item.url ? "Fact Source" : statusLabels[item.status] || "Source Lane";
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge ${item.url ? "fact" : "analysis"}">${item.url ? "Fact Source" : "Source Lane"}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
+        <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${item.title}</h4>
         <p>${item.text}</p>
         <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
