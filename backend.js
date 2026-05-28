@@ -522,6 +522,10 @@ function classifyChatPrompt(prompt = "") {
   return { topic: "general" };
 }
 
+function isSpecificSportsResultPrompt(prompt = "") {
+  return /\b(who|against|opponent|score|lost|loss|beat|defeated|eliminated|knocked out|result|won|winner|final)\b/i.test(prompt);
+}
+
 function formatLiveContext(label, items = []) {
   if (!items.length) return "";
   return [
@@ -538,7 +542,7 @@ async function buildBackendLiveContext(prompt = "") {
   const requests = [];
   if (intent.topic === "sports") {
     requests.push(["Sports", loadSports(intent.league)]);
-    if (/\b(winner|champion|champions|won|final|latest|news|update)\b/.test(lower)) {
+    if (isSpecificSportsResultPrompt(prompt) || /\b(winner|champion|champions|won|final|latest|news|update)\b/.test(lower)) {
       requests.push(["Related sports news", loadNews(prompt)]);
     }
   }
@@ -567,6 +571,7 @@ async function buildBackendLiveContext(prompt = "") {
 
   return [
     "Use this backend-fetched live context when relevant. Do not claim it covers everything; mention source limits when needed.",
+    "For sports result questions, answer the opponent/winner and final score first when that information appears in live context. If the opponent or score is missing, say the loaded sources do not confirm that exact detail and name the official event, league, ESPN, or tournament score page to check. Do not provide a partial result as if it is complete.",
     ...sections,
   ].join("\n\n");
 }
@@ -584,7 +589,7 @@ export async function chat(body) {
     timeZone: "America/New_York",
   });
   const messages = [
-    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", `Today is ${currentDate}. Answer current-event, sports, market, and policy questions against this date. Never say "as of my last knowledge update." If the backend live context does not answer a current question, say the loaded sources do not confirm it and name the official source to check.`, "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked.", backendLiveContext].filter(Boolean).join("\n\n") },
+    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", `Today is ${currentDate}. Answer current-event, sports, market, and policy questions against this date. Never say "as of my last knowledge update." If the backend live context does not answer a current question, say the loaded sources do not confirm it and name the official source to check.`, "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked. For sports result questions, do not stop at a storyline: include opponent/winner, score, round/date, and source when known.", backendLiveContext].filter(Boolean).join("\n\n") },
     ...(body.history || []).slice(-8).map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
