@@ -419,6 +419,19 @@ function addMessage(role, text) {
   return message;
 }
 
+function updateMessageText(message, text) {
+  const textNode = message.querySelector(".message-text");
+  if (textNode) {
+    textNode.textContent = text;
+    const copyButton = message.querySelector(".copy-message");
+    if (copyButton) {
+      copyButton.onclick = () => copyMessageText(text, copyButton);
+    }
+    return;
+  }
+  message.textContent = text;
+}
+
 function createMessageAction(label, html) {
   const button = document.createElement("button");
   button.className = "message-action";
@@ -691,9 +704,26 @@ function sortGovernmentItems(items = []) {
   return copy.sort((a, b) => parseTimestampValue(b.timestamp) - parseTimestampValue(a.timestamp));
 }
 
-function renderGovernmentCards() {
+function filterGovernmentItems(items = []) {
   const filter = document.querySelector("#politics-filter")?.value || "all";
-  renderCards("#politics-grid", sortGovernmentItems(politicsItems), filter);
+  return items.filter((item) => filter === "all" || item.category === filter);
+}
+
+function renderGovernmentCards() {
+  renderCards("#politics-grid", sortGovernmentItems(politicsItems), document.querySelector("#politics-filter")?.value || "all");
+}
+
+function sortNewsItems(items = []) {
+  const sortMode = document.querySelector("#news-sort")?.value || "latest";
+  const copy = [...items];
+  if (sortMode === "title") return copy.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+  if (sortMode === "source") return copy.sort((a, b) => String(a.source || "").localeCompare(String(b.source || "")));
+  return copy.sort((a, b) => parseTimestampValue(b.timestamp) - parseTimestampValue(a.timestamp));
+}
+
+function renderNewsCards(items = newsItems) {
+  const filter = document.querySelector("#news-filter")?.value || "all";
+  renderCards("#news-grid", sortNewsItems(items), filter);
 }
 
 function sortEconomicsMetrics(metrics = []) {
@@ -705,17 +735,30 @@ function sortEconomicsMetrics(metrics = []) {
   return copy;
 }
 
+function sortSportsItems(items = []) {
+  const sortMode = document.querySelector("#sports-sort")?.value || "league";
+  const copy = [...items];
+  if (sortMode === "title") return copy.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+  if (sortMode === "source") return copy.sort((a, b) => String(a.source || "").localeCompare(String(b.source || "")));
+  return copy.sort((a, b) => String(a.league || "").localeCompare(String(b.league || "")) || String(a.title || "").localeCompare(String(b.title || "")));
+}
+
+function renderSportsCards(items = sportsItems) {
+  const filter = document.querySelector("#league-filter")?.value || "all";
+  renderCards("#sports-grid", sortSportsItems(items), filter, "league");
+}
+
 function renderLiveCards(topic, items) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
-  const sortedItems = topic === "politics" ? sortGovernmentItems(items) : items;
-  liveData[topic] = sortedItems;
+  liveData[topic] = items;
+  const sortedItems = topic === "politics" ? sortGovernmentItems(filterGovernmentItems(items)) : items;
   renderLandingCards();
   if (topic === "news") {
-    renderCards("#news-grid", mapNewsLiveToLanes(sortedItems));
+    renderNewsCards(mapNewsLiveToLanes(items));
   }
   if (topic === "sports") {
-    renderCards("#sports-grid", mapSportsLiveToLanes(sortedItems), "all", "league");
+    renderSportsCards(mapSportsLiveToLanes(items));
   }
   if (topic === "economics") {
     renderMarketsFromLive(sortedItems);
@@ -1159,11 +1202,11 @@ chatForm.addEventListener("submit", async (event) => {
 
   try {
     const reply = await askOpenAI(prompt);
-    thinkingMessage.textContent = reply;
+    updateMessageText(thinkingMessage, reply);
     await recordChatMessage("ai", reply);
   } catch (error) {
     const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(prompt)}`;
-    thinkingMessage.textContent = fallback;
+    updateMessageText(thinkingMessage, fallback);
     await recordChatMessage("ai", fallback);
   } finally {
     chatInput.disabled = false;
@@ -1187,8 +1230,16 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   refreshBrief();
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
-document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
-document.querySelector("#politics-filter").addEventListener("change", renderGovernmentCards);
+document.querySelector("#news-filter").addEventListener("change", () => renderNewsCards(liveData.news.length ? mapNewsLiveToLanes(liveData.news) : newsItems));
+document.querySelector("#news-sort").addEventListener("change", () => renderNewsCards(liveData.news.length ? mapNewsLiveToLanes(liveData.news) : newsItems));
+document.querySelector("#politics-filter").addEventListener("change", () => {
+  if (liveData.politics.length) renderLiveCards("politics", liveData.politics);
+  renderGovernmentCards();
+});
+document.querySelector("#politics-sort").addEventListener("change", () => {
+  if (liveData.politics.length) renderLiveCards("politics", liveData.politics);
+  renderGovernmentCards();
+});
 document.querySelector("#economics-sort").addEventListener("change", () => {
   if (liveData.economics.length) {
     renderMarketsFromLive(liveData.economics);
@@ -1197,10 +1248,11 @@ document.querySelector("#economics-sort").addEventListener("change", () => {
   renderMarkets();
 });
 document.querySelector("#league-filter").addEventListener("change", (event) => {
-  renderCards("#sports-grid", sportsItems, event.target.value, "league");
+  renderSportsCards(liveData.sports.length ? mapSportsLiveToLanes(liveData.sports) : sportsItems);
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
   if (sportsButton) loadLiveData("sports", sportsButton);
 });
+document.querySelector("#sports-sort").addEventListener("change", () => renderSportsCards(liveData.sports.length ? mapSportsLiveToLanes(liveData.sports) : sportsItems));
 document.querySelectorAll(".live-button").forEach((button) => {
   button.addEventListener("click", () => loadLiveData(button.dataset.live, button));
 });
@@ -1251,9 +1303,9 @@ document.querySelector("#save-settings-button").addEventListener("click", async 
 async function initializeApp() {
   await loadStoredState();
   refreshBrief();
-  renderCards("#news-grid", newsItems);
+  renderNewsCards();
   renderGovernmentCards();
-  renderCards("#sports-grid", sportsItems, "all", "league");
+  renderSportsCards();
   renderMarkets();
   renderTasks();
   renderAlertSummary();
