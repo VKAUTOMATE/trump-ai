@@ -3,7 +3,7 @@
   automation: "Automation Builder",
   news: "News Briefing",
   markets: "Economics Dashboard",
-  politics: "Government Tracker",
+  politics: "Politics Tracker",
   sports: "Sports Desk",
   settings: "Source Settings",
 };
@@ -322,8 +322,8 @@ function renderLandingCards() {
     },
     {
       icon: "\u2696",
-      label: "Government",
-      title: liveData.politics.length ? `${liveData.politics.length} government updates` : "Government feed ready",
+      label: "Politics",
+      title: liveData.politics.length ? `${liveData.politics.length} policy updates` : "Policy feed ready",
       text: liveData.politics[0]?.title || "Federal Register route ready for agency rules and notices.",
       action: "politics",
       status: liveData.politics.length ? "Live" : "Ready",
@@ -554,7 +554,7 @@ function generateOfflineReply(prompt) {
     return `Economics brief: watch inflation persistence, labor cooling, Fed communication, credit spreads, oil volatility, and consumer stress. Market source status: ${settings.marketSource ? "configured" : "needs endpoint"}.`;
   }
   if (lower.includes("politic") || lower.includes("election") || lower.includes("policy")) {
-    return "Government brief: track the policy calendar, legislation, court deadlines, election indicators, agency actions, and public accountability. Keep it nonpartisan and cite primary sources when live data is connected.";
+    return "Politics brief: track the policy calendar, legislation, court deadlines, election indicators, fundraising, and public opinion. Keep it nonpartisan and cite primary sources when live data is connected.";
   }
   if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("nhl") || lower.includes("golf") || lower.includes("tennis") || lower.includes("ufc") || lower.includes("boxing")) {
     return "Sports brief: monitor injuries, schedules, rest, roster moves, weather, standings pressure, soccer fixtures, fight cards, tee times, draws, and matchup edges. Use the Sports desk for NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, and boxing.";
@@ -803,8 +803,7 @@ async function loadLiveEconomics() {
 }
 
 async function loadLivePolitics() {
-  const selectedCategory = document.querySelector("#politics-filter")?.value || "all";
-  return (await fetchBackendJson(`/api/live/politics?category=${encodeURIComponent(selectedCategory)}`)).items || [];
+  return (await fetchBackendJson("/api/live/politics")).items || [];
 }
 
 async function loadLiveSports() {
@@ -1062,7 +1061,7 @@ function renderReadiness() {
     { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
     { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
     { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
-    { label: "Government pipeline", detail: liveData.politics.length ? `${liveData.politics.length} government and public-accountability items loaded through backend.` : "Use Load Live Government to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
+    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} government and public-accountability items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
     { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded through backend.` : "Use Load Live Sports to call /api/live/sports.", state: liveData.sports.length ? "ready" : "partial" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
     { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },
@@ -1156,11 +1155,7 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
-document.querySelector("#politics-filter").addEventListener("change", (event) => {
-  renderCards("#politics-grid", politicsItems, event.target.value);
-  const governmentButton = document.querySelector('.live-button[data-live="politics"]');
-  if (governmentButton) loadLiveData("politics", governmentButton);
-});
+document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
