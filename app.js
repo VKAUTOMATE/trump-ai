@@ -20,10 +20,10 @@ const newsItems = [
 const politicsItems = [
   { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Live now", status: "live" },
   { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Live now", status: "live" },
-  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Needs Congress.gov or GovInfo route", timestamp: "Planned next", status: "planned" },
-  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "Needs court source route", timestamp: "Planned next", status: "planned" },
-  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "Needs election source route", timestamp: "Planned next", status: "planned" },
-  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Verification workflow", timestamp: "Manual verify mode", status: "manual" },
+  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress.gov RSS route", timestamp: "Live route ready", status: "live" },
+  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "CourtListener route", timestamp: "Live route ready", status: "live" },
+  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "EAC and Vote.gov route", timestamp: "Live route ready", status: "live" },
+  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Oversight.gov route", timestamp: "Live route ready", status: "live" },
 ];
 
 const sportsItems = [
@@ -631,7 +631,7 @@ function renderLiveCards(topic, items) {
 
   const sourceLabels = {
     news: "GDELT live news API",
-    politics: "Federal Register API",
+    politics: "Federal Register, Congress.gov, CourtListener, EAC, and Oversight.gov",
     economics: "Alpha Vantage, BLS, U.S. Treasury",
     sports: "ESPN scoreboard APIs",
   };
@@ -979,7 +979,7 @@ function renderReadiness() {
     { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
     { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
     { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
-    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} Federal Register items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
+    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} government and public-accountability items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
     { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded through backend.` : "Use Load Live Sports to call /api/live/sports.", state: liveData.sports.length ? "ready" : "partial" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
     { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },

@@ -67,6 +67,37 @@ function parseNewsRss(xml, sourceLabel) {
   });
 }
 
+function stripHtml(value = "") {
+  return decodeXml(value.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
+function absoluteUrl(baseUrl, maybePath = "") {
+  if (!maybePath) return baseUrl;
+  try {
+    return new URL(maybePath, baseUrl).toString();
+  } catch {
+    return baseUrl;
+  }
+}
+
+function parseRssItems(xml, sourceLabel, limit = 6) {
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, limit).map((match) => {
+    const item = match[1];
+    const read = (tag) => decodeXml((item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`)) || [])[1] || "");
+    const title = stripHtml(read("title")) || `${sourceLabel} item`;
+    const description = stripHtml(read("description"));
+    const published = stripHtml(read("pubDate")) || stripHtml(read("dc:date"));
+    const link = stripHtml(read("link"));
+    return {
+      title,
+      text: description || `${published || "Latest"} - ${sourceLabel}`,
+      source: sourceLabel,
+      timestamp: published ? new Date(published).toLocaleString() : "Latest",
+      url: link,
+    };
+  });
+}
+
 function stooqCsvToItem(csv, symbol, label) {
   const [, row] = csv.trim().split(/\r?\n/);
   if (!row) throw new Error(`No market row for ${symbol}`);
@@ -193,6 +224,19 @@ export async function loadEconomics() {
 }
 
 export async function loadPolitics() {
+  const settled = await Promise.allSettled([
+    loadFederalRegister(),
+    loadCongress(),
+    loadCourts(),
+    loadElections(),
+    loadAccountability(),
+  ]);
+  const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+  if (!items.length) throw new Error("Government and politics sources were unavailable.");
+  return items.slice(0, 18);
+}
+
+export async function loadFederalRegister() {
   const data = await fetchJson("https://www.federalregister.gov/api/v1/documents.json?per_page=6&order=newest");
   return (data.results || []).slice(0, 6).map((item) => ({
     title: item.title || "Federal Register item",
@@ -201,6 +245,141 @@ export async function loadPolitics() {
     timestamp: item.publication_date || "Recent",
     url: item.html_url,
   }));
+}
+
+export async function loadCongress() {
+  const apiKey = process.env.CONGRESS_API_KEY || process.env.CONGRESS_GOV_API_KEY || "DEMO_KEY";
+  try {
+    const data = await fetchJson(`https://api.congress.gov/v3/bill?format=json&limit=8&api_key=${encodeURIComponent(apiKey)}`, undefined, 12000);
+    const bills = data.bills || [];
+    if (bills.length) {
+      return bills.slice(0, 8).map((bill) => ({
+        title: `${bill.type || "Bill"} ${bill.number || ""}: ${bill.title || "Congressional bill"}`.trim(),
+        text: `${bill.latestAction?.actionDate || bill.updateDate || "Recent"} - ${bill.latestAction?.text || "Latest action from Congress.gov."}`,
+        source: "Congress.gov API",
+        timestamp: bill.latestAction?.actionDate || bill.updateDate || "Recent",
+        url: bill.url || `https://www.congress.gov/bill/${bill.congress || "119th-congress"}/${String(bill.type || "bill").toLowerCase()}/${bill.number || ""}`,
+      }));
+    }
+  } catch {
+    // Fall through to no-key RSS feeds.
+  }
+
+  const feeds = [
+    { url: "https://www.congress.gov/rss/bills-presented-to-the-president.xml", label: "Congress.gov bills presented to the President" },
+    { url: "https://www.congress.gov/rss/house-floor-today.xml", label: "Congress.gov House floor" },
+    { url: "https://www.congress.gov/rss/senate-floor-today.xml", label: "Congress.gov Senate floor" },
+  ];
+  const settled = await Promise.allSettled(feeds.map((feed) => (
+    fetchText(feed.url, 9000).then((xml) => parseRssItems(xml, feed.label, 4))
+  )));
+  const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+  if (!items.length) {
+    return [{
+      title: "Congress.gov legislative activity",
+      text: "Congress.gov RSS did not return items, but this lane is wired to official legislative feeds.",
+      source: "Congress.gov RSS",
+      timestamp: "Source ready",
+      url: "https://www.congress.gov/get-alerts",
+    }];
+  }
+  return items.slice(0, 8);
+}
+
+export async function loadCourts(query = "federal court") {
+  const url = `https://www.courtlistener.com/api/rest/v4/search/?q=${encodeURIComponent(query)}&type=o&order_by=dateFiled%20desc`;
+  const data = await fetchJson(url, {
+    headers: process.env.COURTLISTENER_API_KEY ? { Authorization: `Token ${process.env.COURTLISTENER_API_KEY}` } : {},
+  }, 12000);
+  const results = data.results || [];
+  if (!results.length) {
+    return [{
+      title: "CourtListener search ready",
+      text: "No recent court items matched the default query. Try a narrower court or issue search later.",
+      source: "CourtListener legal search",
+      timestamp: "No matches",
+      url: "https://www.courtlistener.com/",
+    }];
+  }
+  return results.slice(0, 6).map((item) => ({
+    title: item.caseName || item.caseNameFull || "Court opinion",
+    text: `${item.dateFiled || "Recent"} - ${stripHtml(item.snippet || item.court || "CourtListener result")}`,
+    source: item.court || "CourtListener legal search",
+    timestamp: item.dateFiled || "Recent",
+    url: absoluteUrl("https://www.courtlistener.com", item.absolute_url),
+  }));
+}
+
+export async function loadElections() {
+  const sources = [
+    { url: "https://www.eac.gov/news", label: "U.S. Election Assistance Commission news" },
+    { url: "https://www.eac.gov/", label: "U.S. Election Assistance Commission" },
+    { url: "https://vote.gov/", label: "Vote.gov official voter information" },
+  ];
+  const settled = await Promise.allSettled(sources.map((source) => fetchText(source.url, 9000).then((html) => ({ ...source, html }))));
+  const items = settled.flatMap((result) => {
+    if (result.status !== "fulfilled") return [];
+    const { url, label, html } = result.value;
+    const linkMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/g)]
+      .map((match) => ({ href: match[1], title: stripHtml(match[2]) }))
+      .filter((item) => item.title.length > 18 && !/skip|menu|search|language|breadcrumb|navigation|read more|view all|^united states election assistance commission$/i.test(item.title))
+      .slice(0, 3);
+    const titleMatches = linkMatches.length ? linkMatches : [...html.matchAll(/<h[123][^>]*>([\s\S]*?)<\/h[123]>/g)]
+      .map((match) => ({ href: url, title: stripHtml(match[1]) }))
+      .filter((item) => item.title.length > 10 && !/skip|menu|search|language|breadcrumb|navigation|^news$/i.test(item.title))
+      .slice(0, 3);
+    return titleMatches.map((item) => ({
+      title: item.title,
+      text: `Election administration source loaded from ${label}.`,
+      source: label,
+      timestamp: new Date().toLocaleDateString(),
+      url: absoluteUrl(url, item.href),
+    }));
+  });
+  const uniqueItems = [...new Map(items.map((item) => [`${item.title}|${item.url}`, item])).values()];
+  if (!uniqueItems.length) {
+    return [{
+      title: "Official election information",
+      text: "Vote.gov and EAC source pages are wired for election administration monitoring.",
+      source: "Vote.gov and EAC",
+      timestamp: "Source ready",
+      url: "https://vote.gov/",
+    }];
+  }
+  return uniqueItems.slice(0, 6);
+}
+
+export async function loadAccountability() {
+  const sources = [
+    { url: "https://www.oversight.gov/reports/all", label: "Oversight.gov reports" },
+    { url: "https://www.oversight.gov/reports/investigations", label: "Oversight.gov investigations" },
+  ];
+  const settled = await Promise.allSettled(sources.map((source) => fetchText(source.url, 12000).then((html) => ({ ...source, html }))));
+  const items = settled.flatMap((result) => {
+    if (result.status !== "fulfilled") return [];
+    const { url, label, html } = result.value;
+    const titleMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/g)]
+      .map((match) => ({ href: match[1], title: stripHtml(match[2]) }))
+      .filter((item) => item.title.length > 30 && /report|audit|investigat|recommend|review|summary|finding/i.test(item.title))
+      .slice(0, 5);
+    return titleMatches.map((item) => ({
+      title: item.title,
+      text: `Inspector General accountability item from ${label}.`,
+      source: label,
+      timestamp: new Date().toLocaleDateString(),
+      url: absoluteUrl(url, item.href),
+    }));
+  });
+  if (!items.length) {
+    return [{
+      title: "Oversight.gov accountability reports",
+      text: "Oversight.gov source pages are wired for public accountability monitoring.",
+      source: "Oversight.gov",
+      timestamp: "Source ready",
+      url: "https://www.oversight.gov/",
+    }];
+  }
+  return items.slice(0, 8);
 }
 
 export async function loadSports(league = "all") {
@@ -397,8 +576,15 @@ export async function chat(body) {
     throw new Error("The backend needs OPENAI_API_KEY before real AI answers are enabled.");
   }
   const backendLiveContext = await buildBackendLiveContext(body.prompt || "");
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/New_York",
+  });
   const messages = [
-    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. Do not say 'as of my last knowledge update.' When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked.", backendLiveContext].filter(Boolean).join("\n\n") },
+    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", `Today is ${currentDate}. Answer current-event, sports, market, and policy questions against this date. Never say "as of my last knowledge update." If the backend live context does not answer a current question, say the loaded sources do not confirm it and name the official source to check.`, "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked.", backendLiveContext].filter(Boolean).join("\n\n") },
     ...(body.history || []).slice(-8).map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
