@@ -387,17 +387,30 @@ function addMessage(role, text) {
   const message = document.createElement("div");
   message.className = `message ${role}`;
   message.textContent = text;
+  chatLog.classList.remove("empty");
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
   return message;
 }
 
+function renderEmptyChatState() {
+  chatLog.innerHTML = `
+    <div class="chat-empty">
+      <p class="card-label">Command ready</p>
+      <h4>Start a clean request</h4>
+      <p>Ask a question, load live data first, or use a quick prompt. Saved old answers will not appear here after you start a new chat.</p>
+    </div>
+  `;
+  chatLog.classList.add("empty");
+}
+
 function renderChatHistory() {
   chatLog.innerHTML = "";
   if (!conversationHistory.length) {
-    addMessage("ai", "Welcome to TRUMP AI. Ask me anything: general questions, writing, school help, coding, planning, research, saved alerts, news, economics, politics, and sports all work from this command center.");
+    renderEmptyChatState();
     return;
   }
+  chatLog.classList.remove("empty");
   conversationHistory.forEach((entry) => addMessage(entry.role, entry.text));
 }
 
@@ -1059,10 +1072,12 @@ chatForm.addEventListener("submit", async (event) => {
 
 exportChatButton.addEventListener("click", exportChatHistory);
 clearChatButton.addEventListener("click", async () => {
-  if (!window.confirm("Clear the saved personal assistant chat from this browser?")) return;
   conversationHistory = [];
+  localStorage.removeItem("trump-ai-chat-history");
   await saveChatHistory();
-  renderChatHistory();
+  renderEmptyChatState();
+  chatInput.value = "";
+  chatInput.focus();
 });
 
 document.querySelector("#theme-button").addEventListener("click", () => document.body.classList.toggle("dark"));
