@@ -223,17 +223,27 @@ export async function loadEconomics() {
   return items.slice(0, 14);
 }
 
-export async function loadPolitics() {
-  const settled = await Promise.allSettled([
-    loadFederalRegister(),
-    loadCongress(),
-    loadCourts(),
-    loadElections(),
-    loadAccountability(),
-  ]);
+export async function loadPolitics(category = "all") {
+  const loaders = {
+    federal: loadFederalRegister,
+    congress: loadCongress,
+    courts: loadCourts,
+    elections: loadElections,
+    oversight: loadAccountability,
+  };
+  const selectedLoader = loaders[category];
+  const settled = await Promise.allSettled(selectedLoader
+    ? [selectedLoader()]
+    : [
+      loadFederalRegister(),
+      loadCongress(),
+      loadCourts(),
+      loadElections(),
+      loadAccountability(),
+    ]);
   const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   if (!items.length) throw new Error("Government and politics sources were unavailable.");
-  return items.slice(0, 30);
+  return items.slice(0, 18);
 }
 
 export async function loadFederalRegister() {

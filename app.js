@@ -803,7 +803,8 @@ async function loadLiveEconomics() {
 }
 
 async function loadLivePolitics() {
-  return (await fetchBackendJson("/api/live/politics")).items || [];
+  const selectedCategory = document.querySelector("#politics-filter")?.value || "all";
+  return (await fetchBackendJson(`/api/live/politics?category=${encodeURIComponent(selectedCategory)}`)).items || [];
 }
 
 async function loadLiveSports() {
@@ -1155,7 +1156,11 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
-document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
+document.querySelector("#politics-filter").addEventListener("change", (event) => {
+  renderCards("#politics-grid", politicsItems, event.target.value);
+  const governmentButton = document.querySelector('.live-button[data-live="politics"]');
+  if (governmentButton) loadLiveData("politics", governmentButton);
+});
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
