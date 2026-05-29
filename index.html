@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260529-espn-domain-source" />
+    <link rel="stylesheet" href="styles.css?v=20260529-gpt-4o-model" />
   </head>
   <body>
     <div class="app-shell">
@@ -104,7 +104,7 @@
                   <span class="assistant-avatar" aria-hidden="true"><span></span></span>
                   <div>
                     <strong>TRUMP AI Assistant</strong>
-                    <small>Live-aware command robot</small>
+                    <small>Personal AI assistant</small>
                   </div>
                 </div>
                 <div class="chat-actions">
@@ -114,7 +114,7 @@
               </div>
               <div id="chat-log" class="chat-log" aria-live="polite"></div>
               <form id="chat-form" class="chat-form">
-                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask a clear command: verify a claim, get a score, write something, explain a topic, or search live context" />
+                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask any question..." />
                 <button type="submit"><span class="button-icon">&#10148;</span>Send</button>
               </form>
             </section>
@@ -236,7 +236,7 @@
               <h4>AI Connection</h4>
               <label><span>Backend API URL</span><input id="backend-api-url" type="url" autocomplete="off" placeholder="Leave blank for same server, or paste Render/Vercel URL" /></label>
               <label><span>OpenAI API key</span><input id="openai-api-key" type="password" autocomplete="off" placeholder="Move this to backend env OPENAI_API_KEY" /></label>
-              <label><span>Primary model</span><input id="model-name" type="text" placeholder="gpt-4.4" /></label>
+              <label><span>Primary model</span><input id="model-name" type="text" placeholder="gpt-4o" /></label>
               <p class="settings-note">Live data and AI requests now go through your backend. Put secret keys in backend environment variables, not browser code.</p>
             </article>
             <article class="settings-panel">
@@ -319,6 +319,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260529-espn-domain-source"></script>
+    <script src="app.js?v=20260529-gpt-4o-model"></script>
   </body>
 </html>

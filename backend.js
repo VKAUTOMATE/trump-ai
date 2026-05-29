@@ -1,8 +1,8 @@
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.4";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 function normalizeModelName(modelName) {
   const value = (modelName || "").trim();
-  if (!value || value === "gpt-4o-mini" || value === "gpt-5.4-mini" || value === "gpt-5-mini") return OPENAI_MODEL;
+  if (!value || value === "gpt-4.4" || value === "gpt-4o-mini" || value === "gpt-5.4-mini" || value === "gpt-5-mini") return OPENAI_MODEL;
   return value;
 }
 

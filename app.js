@@ -75,7 +75,7 @@ const defaultSettings = {
   newsSource: "",
   marketSource: "",
   sportsSource: "",
-  modelName: "gpt-4.4",
+  modelName: "gpt-4o",
   tone: "neutral",
   length: "balanced",
   citations: true,
@@ -149,7 +149,7 @@ let dbPromise;
 
 function normalizeModelName(modelName) {
   const value = (modelName || "").trim();
-  if (!value || value === "gpt-4o-mini" || value === "gpt-5.4-mini" || value === "gpt-5-mini") return defaultSettings.modelName;
+  if (!value || value === "gpt-4.4" || value === "gpt-4o-mini" || value === "gpt-5.4-mini" || value === "gpt-5-mini") return defaultSettings.modelName;
   return value;
 }
 
@@ -446,8 +446,8 @@ function renderEmptyChatState() {
   chatLog.innerHTML = `
     <div class="chat-empty">
       <p class="card-label">Command ready</p>
-      <h4>Ask, verify, write, or search live context</h4>
-      <p>For current scores, markets, policy, or news, ask the exact question and I will use the backend context when it is available. If a fact is missing, I will name the source to check.</p>
+      <h4>Ask Anything</h4>
+      <p>Ask any question. Get help with writing, planning, studying, coding, research, ideas, explanations, messages, and live information when needed.</p>
     </div>
   `;
   chatLog.classList.add("empty");
