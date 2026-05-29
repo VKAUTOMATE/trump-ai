@@ -875,19 +875,33 @@ function renderMarketsFromLive(items) {
     { category: "oil", label: "Oil", item: findItem("oil", "uso"), fallback: "Waiting on oil source." },
     { category: "credit", label: "Credit", item: findItem("credit", "hyg", "high yield"), fallback: "Waiting on credit source." },
   ];
-  liveMetrics
+  const visibleMetrics = liveMetrics
     .filter((metric) => selectedCategory === "all" || metric.category === selectedCategory)
-    .forEach(({ label, item, fallback }) => {
+    .filter((metric) => metric.item);
+  if (!visibleMetrics.length) {
+    const selectedLabel = document.querySelector("#economics-filter option:checked")?.textContent || "this economics lane";
+    container.innerHTML = `
+      <article class="metric-card live-metric-card">
+        <div class="trust-row"><span class="trust-badge analysis">No Live Match</span><span>Verified only</span></div>
+        <h4>${escapeHtml(selectedLabel)}</h4>
+        <span class="metric-value flat">No data</span>
+        <p>No verified live economics item was returned for this selected lane. Try All economics, or check the source endpoint later.</p>
+        <footer><span>Live economics source</span><span>No fallback card shown</span></footer>
+      </article>
+    `;
+    return;
+  }
+  visibleMetrics.forEach(({ label, item }) => {
     const card = document.createElement("article");
     card.className = "metric-card live-metric-card";
     card.innerHTML = `
-      <div class="trust-row"><span class="trust-badge ${item ? "fact" : "analysis"}">${item ? "Fact Source" : "Source Pending"}</span><span>${escapeHtml(item?.timestamp || "Live check")}</span></div>
+      <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live check")}</span></div>
       <h4>${escapeHtml(label)}</h4>
-      <span class="metric-value ${item ? "up" : "flat"}">${item ? "Live" : "Pending"}</span>
-      <p>${escapeHtml(item ? `${item.title}: ${item.text}` : fallback)}</p>
+      <span class="metric-value up">Live</span>
+      <p>${escapeHtml(`${item.title}: ${item.text}`)}</p>
       <footer>
-        <span>${escapeHtml(item?.source || "Live economics source")}</span>
-        ${item?.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Retry live load</span>"}
+        <span>${escapeHtml(item.source || "Live economics source")}</span>
+        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
       </footer>
     `;
     container.append(card);

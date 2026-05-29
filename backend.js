@@ -236,7 +236,7 @@ export async function loadEconomics(category = "all") {
     .map((item) => ({ ...item, category: economicsCategoryForItem(item) }));
   if (!items.length) throw new Error("Economics sources were unavailable.");
   const filteredItems = category === "all" ? items : items.filter((item) => item.category === category);
-  return (filteredItems.length ? filteredItems : items).slice(0, 14);
+  return filteredItems.slice(0, 14);
 }
 
 export async function loadPolitics(category = "all") {
