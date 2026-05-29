@@ -311,26 +311,6 @@ function renderLandingCards() {
       time: liveData.news[0]?.timestamp || "Waiting",
     },
     {
-      icon: "\u25b5",
-      label: "Economics",
-      title: liveData.economics.length ? `${liveData.economics.length} economics items` : "No economics loaded",
-      text: liveData.economics[0]?.title || "Open Economics and load BLS, Treasury, or market source data.",
-      action: "markets",
-      status: liveData.economics.length ? "Live" : "Not loaded",
-      source: liveData.economics[0]?.source || "No source loaded",
-      time: liveData.economics[0]?.timestamp || "Waiting",
-    },
-    {
-      icon: "\u2696",
-      label: "Politics",
-      title: liveData.politics.length ? `${liveData.politics.length} government items` : "No government loaded",
-      text: liveData.politics[0]?.title || "Open Politics and load verified government source data.",
-      action: "politics",
-      status: liveData.politics.length ? "Live" : "Not loaded",
-      source: liveData.politics[0]?.source || "No source loaded",
-      time: liveData.politics[0]?.timestamp || "Waiting",
-    },
-    {
       icon: "\u25cf",
       label: "Sports",
       title: liveData.sports.length ? `${liveData.sports.length} sports items` : "No sports loaded",
@@ -683,6 +663,7 @@ function renderEmptySourceState(containerSelector, title, text, sourceLabel = "N
 }
 
 function renderPoliticsEmptyState() {
+  if (!document.querySelector("#politics-grid")) return;
   renderEmptySourceState("#politics-grid");
 }
 
@@ -909,6 +890,7 @@ async function loadLiveData(topic, button) {
 
 function renderMarkets() {
   const container = document.querySelector("#market-grid");
+  if (!container) return;
   container.innerHTML = "";
 }
 
@@ -1130,8 +1112,6 @@ function renderReadiness() {
     { label: "Backend API", detail: apiBase ? `Using backend at ${apiBase}.` : "Using same-origin Vercel API routes or a saved backend URL.", state: "partial" },
     { label: "AI API", detail: "AI chat now routes through /api/chat. Put OPENAI_API_KEY in the backend environment.", state: "partial" },
     { label: "News pipeline", detail: liveData.news.length ? `${liveData.news.length} live news items loaded through backend.` : "Use Load Live News to call /api/live/news.", state: liveData.news.length ? "ready" : "partial" },
-    { label: "Economics pipeline", detail: liveData.economics.length ? `${liveData.economics.length} stock, inflation, jobs, and rate items loaded through backend.` : "Use Load Live Economics to call /api/live/economics.", state: liveData.economics.length ? "ready" : "partial" },
-    { label: "Politics pipeline", detail: liveData.politics.length ? `${liveData.politics.length} government and public-accountability items loaded through backend.` : "Use Load Live Politics to call /api/live/politics.", state: liveData.politics.length ? "ready" : "partial" },
     { label: "Sports pipeline", detail: liveData.sports.length ? `${liveData.sports.length} live sports items loaded through backend.` : "Use Load Live Sports to call /api/live/sports.", state: liveData.sports.length ? "ready" : "partial" },
     { label: "Automation database", detail: `${tasks.filter((task) => task.active).length} active alerts saved in IndexedDB.`, state: tasks.some((task) => task.active) ? "ready" : "missing" },
     { label: "Personal profile", detail: `${splitList(settings.favoriteTeams).length + splitList(settings.marketWatchlist).length + splitList(settings.topicWatchlist).length} saved teams, tickers, and topics.`, state: (settings.favoriteTeams || settings.marketWatchlist || settings.topicWatchlist || settings.homeRegion) ? "ready" : "partial" },
@@ -1224,8 +1204,8 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
   refreshBrief();
   addMessage("ai", "Briefings refreshed. I updated the dashboard snapshot and kept your saved automations intact.");
 });
-document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
-document.querySelector("#economics-filter").addEventListener("change", () => {
+document.querySelector("#news-filter")?.addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
+document.querySelector("#economics-filter")?.addEventListener("change", () => {
   const economicsButton = document.querySelector('.live-button[data-live="economics"]');
   const economicsLiveGrid = document.querySelector("#economics-live-grid");
   if (liveData.economics.length || economicsLiveGrid?.children.length) {
@@ -1234,7 +1214,7 @@ document.querySelector("#economics-filter").addEventListener("change", () => {
   }
   renderMarkets();
 });
-document.querySelector("#politics-filter").addEventListener("change", (event) => {
+document.querySelector("#politics-filter")?.addEventListener("change", (event) => {
   const politicsButton = document.querySelector('.live-button[data-live="politics"]');
   const politicsLiveGrid = document.querySelector("#politics-live-grid");
   if (liveData.politics.length || politicsLiveGrid?.children.length) {
@@ -1243,7 +1223,7 @@ document.querySelector("#politics-filter").addEventListener("change", (event) =>
   }
   renderPoliticsEmptyState();
 });
-document.querySelector("#league-filter").addEventListener("change", (event) => {
+document.querySelector("#league-filter")?.addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
   if (sportsButton) loadLiveData("sports", sportsButton);

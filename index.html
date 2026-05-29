@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260529-source-value-backend" />
+    <link rel="stylesheet" href="styles.css?v=20260529-remove-econ-politics" />
   </head>
   <body>
     <div class="app-shell">
@@ -30,8 +30,6 @@
           <button class="nav-item active" data-view="command"><span class="nav-icon">&#8984;</span><span>Command</span><small>Ask anything</small></button>
           <button class="nav-item" data-view="automation"><span class="nav-icon">&#9201;</span><span>Automation</span><small>Tasks and alerts</small></button>
           <button class="nav-item" data-view="news"><span class="nav-icon">&#9635;</span><span>News</span><small>Briefing desk</small></button>
-          <button class="nav-item" data-view="markets"><span class="nav-icon">&#9653;</span><span>Economics</span><small>Macro and markets</small></button>
-          <button class="nav-item" data-view="politics"><span class="nav-icon">&#9878;</span><span>Politics</span><small>Policy tracker</small></button>
           <button class="nav-item" data-view="sports"><span class="nav-icon">&#9679;</span><span>Sports</span><small>Scores and storylines</small></button>
           <button class="nav-item" data-view="settings"><span class="nav-icon">&#9881;</span><span>Settings</span><small>Data sources</small></button>
         </nav>
@@ -60,7 +58,7 @@
             <div>
               <p class="eyebrow">Dashboard</p>
               <h3>TRUMP AI Command Dashboard</h3>
-              <p>Ask anything, get general AI answers, use live data, save alerts, search sports, track government, and manage your personal settings from one clear home screen.</p>
+              <p>Ask anything, get general AI answers, use live data, save alerts, search sports, and manage your personal settings from one clear home screen.</p>
             </div>
             <button class="dashboard-action" data-jump="settings"><span class="button-icon">&#9881;</span>Personalize</button>
           </div>
@@ -80,16 +78,6 @@
             <article class="dashboard-tile" data-jump="news">
               <span class="tile-icon">&#9635;</span>
               <div><strong>News</strong><p>GDELT headlines, source names, timestamps, and article links.</p></div>
-              <button type="button">Open</button>
-            </article>
-            <article class="dashboard-tile" data-jump="markets">
-              <span class="tile-icon">&#9653;</span>
-              <div><strong>Economics</strong><p>Markets, inflation, jobs, Treasury rates, oil, dollar, and credit.</p></div>
-              <button type="button">Open</button>
-            </article>
-            <article class="dashboard-tile" data-jump="politics">
-              <span class="tile-icon">&#9878;</span>
-              <div><strong>Politics</strong><p>Federal Register notices, agencies, publication dates, and source links.</p></div>
               <button type="button">Open</button>
             </article>
             <article class="dashboard-tile" data-jump="sports">
@@ -146,8 +134,6 @@
                   <button data-prompt="Help me solve this step by step: ">Tutor</button>
                   <button data-prompt="Verify this claim: ">Verify claim</button>
                   <button data-prompt="Give me a five point news briefing.">News briefing</button>
-                  <button data-prompt="Create an automation to watch inflation, jobs, and Fed decisions.">Macro monitor</button>
-                  <button data-prompt="Summarize political risks for the week.">Politics risk</button>
                   <button data-prompt="What sports stories should I watch tonight?">Sports slate</button>
                 </div>
               </article>
@@ -196,54 +182,6 @@
           </div>
           <div id="news-live-grid" class="live-grid"></div>
           <div id="news-grid" class="content-grid"></div>
-        </section>
-
-        <section id="markets" class="view">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Economics</p>
-              <h3>Macro Dashboard</h3>
-            </div>
-            <div class="section-actions">
-              <select id="economics-filter" aria-label="Filter economics">
-                <option value="all">All economics</option>
-                <option value="inflation">Inflation</option>
-                <option value="labor">Labor</option>
-                <option value="rates">Fed / Rates</option>
-                <option value="consumer">Consumer</option>
-                <option value="equities">Equities</option>
-                <option value="dollar">Dollar</option>
-                <option value="oil">Oil</option>
-                <option value="credit">Credit</option>
-              </select>
-              <button class="live-button" data-live="economics"><span class="button-icon">&#8623;</span>Load Live Economics</button>
-            </div>
-          </div>
-          <div id="economics-live-grid" class="live-grid"></div>
-          <div id="market-grid" class="market-grid"></div>
-        </section>
-
-        <section id="politics" class="view">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Politics</p>
-              <h3>Policy and Election Tracker</h3>
-            </div>
-            <div class="section-actions">
-              <select id="politics-filter" aria-label="Filter politics and government">
-                <option value="all">All government</option>
-                <option value="federal">Federal agencies</option>
-                <option value="congress">Congress</option>
-                <option value="courts">Courts</option>
-                <option value="elections">Elections</option>
-                <option value="oversight">Oversight</option>
-              </select>
-              <span class="badge">Nonpartisan</span>
-              <button class="live-button" data-live="politics"><span class="button-icon">&#8623;</span>Load Live Politics</button>
-            </div>
-          </div>
-          <div id="politics-live-grid" class="live-grid"></div>
-          <div id="politics-grid" class="content-grid"></div>
         </section>
 
         <section id="sports" class="view">
@@ -381,6 +319,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260529-source-value-backend"></script>
+    <script src="app.js?v=20260529-remove-econ-politics"></script>
   </body>
 </html>
