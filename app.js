@@ -630,6 +630,7 @@ async function askOpenAI(prompt) {
 function renderCards(containerSelector, items, filter = "all", filterKey = "category") {
   const container = document.querySelector(containerSelector);
   const fallbackSource = containerSelector.includes("sports") ? "sports source lane" : containerSelector.includes("politics") ? "government source lane" : "news source lane";
+  const isSportsGrid = containerSelector.includes("sports");
   const statusLabels = {
     live: "Live Route",
     planned: "Planned Route",
@@ -642,13 +643,16 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       const card = document.createElement("article");
       const status = item.url ? "fact" : item.status || "analysis";
       const label = item.url ? "Fact Source" : statusLabels[item.status] || "Source Lane";
+      const sourceText = isSportsGrid && `${item.source || ""}`.toLowerCase().includes("espn")
+        ? "espn.com"
+        : item.source || (isSportsGrid ? "Source not loaded" : fallbackSource);
       card.className = "data-card";
       card.innerHTML = `
         <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${escapeHtml(item.summary || item.text || "")}</p>
         ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
-        <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
+        <footer><span>Source: ${escapeHtml(sourceText)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
       `;
       container.append(card);
     });
@@ -701,7 +705,7 @@ function renderEconomicsSourceCards(container, items) {
       <p>${escapeHtml(item.summary || item.text || "")}</p>
       ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
       <footer>
-        <span>${escapeHtml(item.source || "Economics source")}${item.confidence ? ` - ${escapeHtml(item.confidence)} confidence` : ""}</span>
+        <span>${escapeHtml(item.source || "Economics source")}</span>
         ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">View source</a>` : "<span>Source checked</span>"}
       </footer>
     </article>
@@ -780,7 +784,7 @@ function renderLiveCards(topic, items) {
         <p>${escapeHtml(item.summary || item.text || "")}</p>
         ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
         <footer>
-          <span>${escapeHtml(item.source || "Live source")}${item.confidence ? ` - ${escapeHtml(item.confidence)} confidence` : ""}</span>
+          <span>${escapeHtml(item.source || "Live source")}</span>
           ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
         </footer>
       </article>
@@ -840,7 +844,7 @@ function mapSportsLiveToLanes(items = []) {
     league: item.league || selectedLeague,
     title: item.title || `${selectedLeague === "all" ? "Sports" : selectedLeague} live event`,
     text: item.text || "Live sports item loaded from the backend.",
-    source: item.source || `${item.league || selectedLeague} live source`,
+    source: item.source || "ESPN",
     timestamp: item.timestamp || "Live",
     url: item.url,
   }));
@@ -1132,7 +1136,7 @@ function renderIntegrationPlan() {
     ...splitList(settings.topicWatchlist),
   ].slice(0, 6);
   const steps = [
-    ["Ingest", "Connect saved endpoints and normalize each item into title, time, source, topic, and confidence fields."],
+    ["Ingest", "Connect saved endpoints and normalize each item into title, time, source, topic, and source details."],
     ["Personalize", watchedItems.length ? `Prioritize ${watchedItems.join(", ")} when ranking briefs and alerts.` : "Save teams, tickers, and topics to personalize ranking."],
     ["Rank", "Score items by urgency, reliability, user relevance, and expected impact across news, economics, politics, and sports."],
     ["Summarize", `Use ${modelName} through the OpenAI Responses API with the saved tone, length, and citation requirements.`],

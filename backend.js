@@ -529,7 +529,7 @@ export async function loadSports(league = "all") {
         league: target.key,
         title: names || event.name || `${target.label} event`,
         text: `${event.status?.type?.shortDetail || "Scheduled"}${scores ? ` - ${scores}` : ""}`,
-        source: `${target.label} scores/schedule`,
+        source: "espn.com",
         timestamp: event.date ? new Date(event.date).toLocaleString() : "Schedule",
         url: event.links?.[0]?.href,
       };
@@ -598,7 +598,7 @@ function formatLiveContext(label, items = []) {
   return [
     `${label} live context:`,
     ...items.slice(0, 8).map((item, index) => (
-      `${index + 1}. ${item.title || "Untitled"} - ${item.summary || item.text || ""} Why it matters: ${item.whyItMatters || "Use as source context."} Source: ${item.source || "live source"} (${item.sourceType || "source"}, confidence: ${item.confidence || "medium"}) Time: ${item.timestamp || "latest"}${item.url ? ` URL: ${item.url}` : ""}`
+      `${index + 1}. ${item.title || "Untitled"} - ${item.summary || item.text || ""} Why it matters: ${item.whyItMatters || "Use as source context."} Source: ${item.source || "live source"} (${item.sourceType || "source"}) Time: ${item.timestamp || "latest"}${item.url ? ` URL: ${item.url}` : ""}`
     )),
   ].join("\n");
 }
