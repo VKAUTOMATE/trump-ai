@@ -673,6 +673,46 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
     });
 }
 
+function economicsSourceLabel(item) {
+  const source = `${item.source || ""}`.toLowerCase();
+  if (source.includes("bureau of labor")) return "BLS data";
+  if (source.includes("treasury")) return "Treasury data";
+  if (source.includes("stooq")) return "Market quote";
+  return "Source data";
+}
+
+function economicsCategoryLabel(category) {
+  const labels = {
+    inflation: "Inflation",
+    labor: "Labor",
+    rates: "Rates",
+    consumer: "Consumer",
+    equities: "Equities",
+    dollar: "Dollar",
+    oil: "Oil",
+    credit: "Credit",
+  };
+  return labels[category] || "Economics";
+}
+
+function renderEconomicsSourceCards(container, items) {
+  container.innerHTML = items.map((item) => `
+    <article class="data-card live-card economics-source-card">
+      <div class="trust-row">
+        <span class="trust-badge fact">${escapeHtml(economicsSourceLabel(item))}</span>
+        <span>${escapeHtml(item.timestamp || "Latest source update")}</span>
+      </div>
+      <p class="card-label">${escapeHtml(economicsCategoryLabel(item.category))}</p>
+      <h4>${escapeHtml(item.title)}</h4>
+      <p>${escapeHtml(item.text)}</p>
+      <footer>
+        <span>${escapeHtml(item.source || "Economics source")}</span>
+        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open source</a>` : "<span>Source checked</span>"}
+      </footer>
+    </article>
+  `).join("");
+}
+
 function renderLiveCards(topic, items) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
@@ -718,11 +758,15 @@ function renderLiveCards(topic, items) {
     renderReadiness();
     return;
   }
+  if (topic === "economics") {
+    renderEconomicsSourceCards(container, items);
+    renderReadiness();
+    return;
+  }
 
   const sourceLabels = {
     news: "GDELT live news API",
     politics: "Federal Register, Congress.gov, CourtListener, EAC, and Oversight.gov",
-    economics: "Alpha Vantage, BLS, U.S. Treasury",
     sports: "ESPN scoreboard APIs",
   };
 

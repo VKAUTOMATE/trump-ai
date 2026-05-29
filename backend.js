@@ -124,6 +124,16 @@ function economicsCategoryForItem(item) {
   return "all";
 }
 
+function uniqueEconomicsItems(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.category || "all"}:${item.title || ""}:${item.source || ""}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function fetchBlsSeries() {
   const labels = {
     CUSR0000SA0: "Inflation CPI",
@@ -207,36 +217,47 @@ export async function loadNews(query = "breaking news") {
 }
 
 export async function loadEconomics(category = "all") {
-  const requests = [
-    fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1d&interval=1m").then((data) => yahooChartToItem(data, "SPY", "S&P 500 ETF")),
-    fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/UUP?range=1d&interval=1m").then((data) => yahooChartToItem(data, "UUP", "U.S. Dollar ETF")),
-    fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/USO?range=1d&interval=1m").then((data) => yahooChartToItem(data, "USO", "Oil ETF")),
-    fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/HYG?range=1d&interval=1m").then((data) => yahooChartToItem(data, "HYG", "High yield credit ETF")),
-    fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/XLY?range=1d&interval=1m").then((data) => yahooChartToItem(data, "XLY", "Consumer discretionary ETF")),
-    fetchText("https://stooq.com/q/l/?s=spy.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "spy.us", "S&P 500 ETF")),
-    fetchText("https://stooq.com/q/l/?s=qqq.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "qqq.us", "Nasdaq 100 ETF")),
-    fetchText("https://stooq.com/q/l/?s=uup.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uup.us", "U.S. Dollar ETF")),
-    fetchText("https://stooq.com/q/l/?s=uso.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uso.us", "Oil ETF")),
-    fetchText("https://stooq.com/q/l/?s=hyg.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "hyg.us", "High yield credit ETF")),
-    fetchText("https://stooq.com/q/l/?s=xly.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "xly.us", "Consumer discretionary ETF")),
-    fetchJson(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=${process.env.ALPHA_VANTAGE_API_KEY || "demo"}`).then(alphaVantageQuoteToItem),
-    fetchBlsSeries(),
-    fetchJson("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&page[size]=3")
-      .then((data) => (data.data || []).slice(0, 3).map((item) => ({
-        title: `${item.security_desc || "Treasury security"} rate`,
-        text: `${item.record_date}: average interest rate ${item.avg_interest_rate_amt || "n/a"}%.`,
-        source: "U.S. Treasury Fiscal Data",
-        timestamp: item.record_date,
-        url: "https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates",
-      }))),
-  ];
+  const marketRequests = {
+    equities: [
+      fetchText("https://stooq.com/q/l/?s=spy.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "spy.us", "S&P 500 ETF")),
+      fetchText("https://stooq.com/q/l/?s=qqq.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "qqq.us", "Nasdaq 100 ETF")),
+    ],
+    dollar: [
+      fetchText("https://stooq.com/q/l/?s=uup.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uup.us", "U.S. Dollar ETF")),
+    ],
+    oil: [
+      fetchText("https://stooq.com/q/l/?s=uso.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "uso.us", "Oil ETF")),
+    ],
+    credit: [
+      fetchText("https://stooq.com/q/l/?s=hyg.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "hyg.us", "High yield credit ETF")),
+    ],
+    consumer: [
+      fetchText("https://stooq.com/q/l/?s=xly.us&f=sd2t2ohlcv&h&e=csv").then((csv) => stooqCsvToItem(csv, "xly.us", "Consumer discretionary ETF")),
+    ],
+  };
+  const blsRequest = fetchBlsSeries();
+  const treasuryRequest = fetchJson("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&page[size]=2")
+    .then((data) => (data.data || []).slice(0, 2).map((item) => ({
+      title: `${item.security_desc || "Treasury security"} rate`,
+      text: `${item.record_date}: average interest rate ${item.avg_interest_rate_amt || "n/a"}%.`,
+      source: "U.S. Treasury Fiscal Data",
+      timestamp: item.record_date,
+      url: "https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates",
+    })));
+  const requests = category === "all"
+    ? [...Object.values(marketRequests).flat(), blsRequest, treasuryRequest]
+    : [
+      ...(marketRequests[category] || []),
+      ...(category === "inflation" || category === "labor" ? [blsRequest] : []),
+      ...(category === "rates" ? [treasuryRequest] : []),
+    ];
   const settled = await Promise.allSettled(requests);
-  const items = settled
+  const items = uniqueEconomicsItems(settled
     .flatMap((result) => result.status === "fulfilled" ? result.value : [])
-    .map((item) => ({ ...item, category: economicsCategoryForItem(item) }));
+    .map((item) => ({ ...item, category: economicsCategoryForItem(item) })));
   if (!items.length) throw new Error("Economics sources were unavailable.");
   const filteredItems = category === "all" ? items : items.filter((item) => item.category === category);
-  return filteredItems.slice(0, 14);
+  return filteredItems.slice(0, 10);
 }
 
 export async function loadPolitics(category = "all") {
