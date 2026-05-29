@@ -684,10 +684,18 @@ function renderLiveCards(topic, items) {
   if (topic === "sports") {
     renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
   }
-  if (topic === "economics") {
-    renderMarketsFromLive(items);
-  }
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
+  if (topic === "economics") {
+    if (items.length && staticGrid) {
+      staticGrid.innerHTML = "";
+      staticGrid.hidden = true;
+      staticGrid.setAttribute("aria-hidden", "true");
+    } else if (staticGrid) {
+      staticGrid.hidden = false;
+      staticGrid.removeAttribute("aria-hidden");
+      renderMarketsFromLive(items);
+    }
+  }
   if (staticGrid && topic !== "sports" && topic !== "news" && topic !== "economics") {
     staticGrid.hidden = true;
     staticGrid.setAttribute("aria-hidden", "true");
@@ -1178,9 +1186,9 @@ document.querySelector("#refresh-button").addEventListener("click", () => {
 });
 document.querySelector("#news-filter").addEventListener("change", (event) => renderCards("#news-grid", newsItems, event.target.value));
 document.querySelector("#economics-filter").addEventListener("change", () => {
-  if (liveData.economics.length) {
-    renderMarketsFromLive(liveData.economics);
-    const economicsButton = document.querySelector('.live-button[data-live="economics"]');
+  const economicsButton = document.querySelector('.live-button[data-live="economics"]');
+  const economicsLiveGrid = document.querySelector("#economics-live-grid");
+  if (liveData.economics.length || economicsLiveGrid?.children.length) {
     if (economicsButton) loadLiveData("economics", economicsButton);
     return;
   }
