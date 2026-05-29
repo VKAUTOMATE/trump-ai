@@ -1002,6 +1002,13 @@ textarea,
   margin: 0;
 }
 
+.source-value {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 10px !important;
+}
+
 .data-card footer,
 .metric-card footer {
   align-items: center;

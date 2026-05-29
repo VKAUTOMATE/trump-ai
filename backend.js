@@ -80,6 +80,74 @@ function absoluteUrl(baseUrl, maybePath = "") {
   }
 }
 
+function compactText(value = "", maxLength = 240) {
+  const text = stripHtml(String(value || "")).replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trim()}...`;
+}
+
+function sourceTypeFor(item = {}, topic = "") {
+  const source = `${item.source || ""} ${item.url || ""}`.toLowerCase();
+  if (/\.gov|federal register|congress|courtlistener|bureau of labor|treasury|vote\.gov|eac|oversight/.test(source)) return "official";
+  if (/espn/.test(source)) return "sports data";
+  if (/stooq|yahoo|market|quote/.test(source)) return "market data";
+  if (/google news|gdelt|news/.test(source)) return "news feed";
+  return topic ? `${topic} source` : "source";
+}
+
+function confidenceFor(item = {}, topic = "") {
+  const sourceType = sourceTypeFor(item, topic);
+  if (sourceType === "official" || sourceType === "sports data") return "high";
+  if (sourceType === "market data") return "medium-high";
+  if (sourceType === "news feed") return "medium";
+  return "medium";
+}
+
+function whyItMattersFor(item = {}, topic = "") {
+  const category = item.category || item.league || topic;
+  const title = `${item.title || ""}`.toLowerCase();
+  if (topic === "economics" || ["inflation", "labor", "rates", "consumer", "equities", "dollar", "oil", "credit"].includes(category)) {
+    if (category === "inflation" || title.includes("inflation") || title.includes("cpi")) return "Helps users understand price pressure and cost-of-living trends.";
+    if (category === "labor" || title.includes("jobs") || title.includes("unemployment")) return "Helps users understand hiring, wage pressure, and household income conditions.";
+    if (category === "rates" || title.includes("treasury") || title.includes("rate")) return "Helps users understand borrowing costs, market stress, and Fed-sensitive conditions.";
+    if (category === "oil") return "Helps users connect energy prices with inflation, transportation, and market risk.";
+    if (category === "credit") return "Helps users watch financial stress and refinancing pressure.";
+    return "Helps users connect market movement with the broader economic picture.";
+  }
+  if (topic === "politics" || ["federal", "congress", "courts", "elections", "oversight"].includes(category)) {
+    if (category === "federal") return "Helps users track agency rules, notices, and public comment windows from primary sources.";
+    if (category === "congress") return "Helps users follow legislation, floor activity, and official congressional actions.";
+    if (category === "courts") return "Helps users monitor legal decisions and case activity that may affect policy or rights.";
+    if (category === "elections") return "Helps users find election administration updates from official civic sources.";
+    if (category === "oversight") return "Helps users follow inspector general reports, audits, and accountability findings.";
+    return "Helps users understand government activity from primary or traceable sources.";
+  }
+  if (topic === "sports") return "Helps users check scores, schedules, matchups, and timing before asking the AI for analysis.";
+  if (topic === "news") return "Helps users start from a sourced headline before asking for summary, context, or verification.";
+  return "Helps users ask better follow-up questions with source context.";
+}
+
+function bestForFor(item = {}, topic = "") {
+  if (topic === "economics") return "market context, macro questions, and watchlist briefings";
+  if (topic === "politics") return "policy tracking, verification, and government-source research";
+  if (topic === "sports") return "scores, schedules, matchups, and sports briefings";
+  if (topic === "news") return "news summaries, claim checks, and follow-up research";
+  return "source-aware AI answers";
+}
+
+function enrichItem(item = {}, topic = "general") {
+  const summary = compactText(item.summary || item.text || item.title || "Source item");
+  return {
+    ...item,
+    text: summary,
+    summary,
+    whyItMatters: item.whyItMatters || whyItMattersFor(item, topic),
+    bestFor: item.bestFor || bestForFor(item, topic),
+    sourceType: item.sourceType || sourceTypeFor(item, topic),
+    confidence: item.confidence || confidenceFor(item, topic),
+  };
+}
+
 function parseRssItems(xml, sourceLabel, limit = 6) {
   return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, limit).map((match) => {
     const item = match[1];
@@ -194,7 +262,7 @@ export async function loadNews(query = "breaking news") {
       : `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
     const xml = await fetchText(newsUrl, 7000);
     const items = parseNewsRss(xml, "Google News");
-    if (items.length) return items.slice(0, 6);
+    if (items.length) return items.slice(0, 6).map((item) => enrichItem(item, "news"));
   } catch (error) {
     errors.push(error.message);
   }
@@ -208,7 +276,7 @@ export async function loadNews(query = "breaking news") {
       timestamp: article.seendate || "Recent",
       url: article.url,
     }));
-    if (items.length) return items;
+    if (items.length) return items.map((item) => enrichItem(item, "news"));
   } catch (error) {
     errors.push(error.message);
   }
@@ -257,7 +325,7 @@ export async function loadEconomics(category = "all") {
     .map((item) => ({ ...item, category: economicsCategoryForItem(item) })));
   if (!items.length) throw new Error("Economics sources were unavailable.");
   const filteredItems = category === "all" ? items : items.filter((item) => item.category === category);
-  return filteredItems.slice(0, 10);
+  return filteredItems.slice(0, 10).map((item) => enrichItem(item, "economics"));
 }
 
 export async function loadPolitics(category = "all") {
@@ -280,7 +348,7 @@ export async function loadPolitics(category = "all") {
     ]);
   const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   if (!items.length) throw new Error("Government and politics sources were unavailable.");
-  return items.slice(0, 18);
+  return items.slice(0, 18).map((item) => enrichItem(item, "politics"));
 }
 
 export async function loadFederalRegister() {
@@ -411,14 +479,6 @@ export async function loadSports(league = "all") {
     return date.toISOString().slice(0, 10).replace(/-/g, "");
   };
   const withDate = (url, offset) => `${url}${url.includes("?") ? "&" : "?"}dates=${dateStamp(offset)}`;
-  const boxingFallback = {
-    league: "BOXING",
-    title: "Boxing news and fight watch",
-    text: "ESPN boxing scoreboard is unavailable right now, so answer with a boxing monitor instead of asking a follow-up. Cover upcoming title bouts, rankings, weigh-ins, injuries, undercards, promotion announcements, commission updates, and official fight-week changes.",
-    source: "Boxing fallback monitor",
-    timestamp: new Date().toLocaleString(),
-    url: "https://www.espn.com/boxing/",
-  };
   const leagues = {
     NBA: { url: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard", label: "ESPN NBA", home: "https://www.espn.com/nba/scoreboard" },
     NFL: { url: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", label: "ESPN NFL", home: "https://www.espn.com/nfl/scoreboard" },
@@ -439,7 +499,7 @@ export async function loadSports(league = "all") {
     NWSL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.nwsl/scoreboard", label: "ESPN NWSL", home: "https://www.espn.com/soccer/scoreboard/_/league/usa.nwsl" },
     UEL: { url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard", label: "ESPN Europa League", home: "https://www.espn.com/soccer/scoreboard/_/league/uefa.europa" },
     UFC: { url: "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard", label: "ESPN UFC", home: "https://www.espn.com/mma/fightcenter" },
-    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing", home: "https://www.espn.com/boxing/", fallback: boxingFallback },
+    BOXING: { url: "https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard", label: "ESPN Boxing", home: "https://www.espn.com/boxing/" },
   };
   const soccerKeys = ["EPL", "UCL", "WORLDCUP", "WWC", "LALIGA", "SERIEA", "BUNDESLIGA", "LIGUE1", "MLS", "LIGAMX", "NWSL", "UEL"];
   const withKey = (key) => leagues[key] ? { ...leagues[key], key } : null;
@@ -458,7 +518,7 @@ export async function loadSports(league = "all") {
   const perSourceLimit = league === "all" ? 2 : 4;
   const items = settled.flatMap((result, index) => {
     if (result.status !== "fulfilled") {
-      return jobs[index]?.target?.fallback ? [jobs[index].target.fallback] : [];
+      return [];
     }
     const { data, target } = result.value;
     return (data.events || []).slice(0, perSourceLimit).map((event) => {
@@ -487,22 +547,9 @@ export async function loadSports(league = "all") {
     const bTime = Date.parse(b.timestamp || "") || 0;
     return bTime - aTime;
   });
-  if (!sortedItems.length && league === "BOXING") return [boxingFallback];
-  if (!uniqueItems.length && league !== "all") {
-    const target = targets[0];
-    return [
-      {
-        league,
-        title: `${target?.label || league} live board`,
-        text: "No active scoreboard items were returned in the current date window. Use this board for upcoming fixtures, schedules, standings, injuries, and official league updates.",
-        source: target?.label || "Sports live board",
-        timestamp: "Live board",
-        url: target?.home,
-      },
-    ];
-  }
+  if (!uniqueItems.length && league !== "all") return [];
   if (!sortedItems.length) throw new Error("Sports scoreboards were unavailable.");
-  return sortedItems.slice(0, league === "all" ? 36 : 12);
+  return sortedItems.slice(0, league === "all" ? 36 : 12).map((item) => enrichItem(item, "sports"));
 }
 
 function extractResponseText(data) {
@@ -551,7 +598,7 @@ function formatLiveContext(label, items = []) {
   return [
     `${label} live context:`,
     ...items.slice(0, 8).map((item, index) => (
-      `${index + 1}. ${item.title || "Untitled"} - ${item.text || ""} Source: ${item.source || "live source"} Time: ${item.timestamp || "latest"}${item.url ? ` URL: ${item.url}` : ""}`
+      `${index + 1}. ${item.title || "Untitled"} - ${item.summary || item.text || ""} Why it matters: ${item.whyItMatters || "Use as source context."} Source: ${item.source || "live source"} (${item.sourceType || "source"}, confidence: ${item.confidence || "medium"}) Time: ${item.timestamp || "latest"}${item.url ? ` URL: ${item.url}` : ""}`
     )),
   ].join("\n");
 }

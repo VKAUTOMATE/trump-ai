@@ -665,8 +665,9 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
       card.className = "data-card";
       card.innerHTML = `
         <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
-        <h4>${item.title}</h4>
-        <p>${item.text}</p>
+        <h4>${escapeHtml(item.title)}</h4>
+        <p>${escapeHtml(item.summary || item.text || "")}</p>
+        ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
         <footer><span>Source: ${item.source || (item.league ? `${item.league} source lane` : fallbackSource)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
       `;
       container.append(card);
@@ -678,24 +679,11 @@ function renderEmptySourceState(containerSelector, title, text, sourceLabel = "N
   if (!container) return;
   container.hidden = false;
   container.removeAttribute("aria-hidden");
-  container.innerHTML = `
-    <article class="data-card empty-source-card">
-      <div class="trust-row"><span class="trust-badge analysis">Not loaded</span><span>Verified only</span></div>
-      <h4>${escapeHtml(title)}</h4>
-      <p>${escapeHtml(text)}</p>
-      <footer><span>${escapeHtml(sourceLabel)}</span><span>Use the load button above</span></footer>
-    </article>
-  `;
+  container.innerHTML = "";
 }
 
 function renderPoliticsEmptyState() {
-  const selectedLabel = document.querySelector("#politics-filter option:checked")?.textContent || "government";
-  renderEmptySourceState(
-    "#politics-grid",
-    `${selectedLabel} data not loaded`,
-    "No government or politics cards are shown until the backend returns verified source items.",
-    "Government source API",
-  );
+  renderEmptySourceState("#politics-grid");
 }
 
 function economicsSourceLabel(item) {
@@ -729,10 +717,11 @@ function renderEconomicsSourceCards(container, items) {
       </div>
       <p class="card-label">${escapeHtml(economicsCategoryLabel(item.category))}</p>
       <h4>${escapeHtml(item.title)}</h4>
-      <p>${escapeHtml(item.text)}</p>
+      <p>${escapeHtml(item.summary || item.text || "")}</p>
+      ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
       <footer>
-        <span>${escapeHtml(item.source || "Economics source")}</span>
-        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open source</a>` : "<span>Source checked</span>"}
+        <span>${escapeHtml(item.source || "Economics source")}${item.confidence ? ` - ${escapeHtml(item.confidence)} confidence` : ""}</span>
+        ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">View source</a>` : "<span>Source checked</span>"}
       </footer>
     </article>
   `).join("");
@@ -767,14 +756,7 @@ function renderLiveCards(topic, items) {
   }
 
   if (!items.length) {
-    container.innerHTML = `
-      <article class="data-card live-card">
-        <div class="trust-row"><span class="trust-badge analysis">No Live Data</span><span>Verified only</span></div>
-        <h4>No source items returned</h4>
-        <p>The backend did not return verified ${escapeHtml(topic)} items for this selected lane. No fallback cards were shown.</p>
-        <footer><span>${escapeHtml(topic)} API</span><span>Try another dropdown lane</span></footer>
-      </article>
-    `;
+    container.innerHTML = "";
     return;
   }
   if (topic === "sports") {
@@ -814,9 +796,10 @@ function renderLiveCards(topic, items) {
       <article class="data-card live-card">
         <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
-        <p>${escapeHtml(item.text)}</p>
+        <p>${escapeHtml(item.summary || item.text || "")}</p>
+        ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
         <footer>
-          <span>${escapeHtml(item.source || "Live source")}</span>
+          <span>${escapeHtml(item.source || "Live source")}${item.confidence ? ` - ${escapeHtml(item.confidence)} confidence` : ""}</span>
           ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
         </footer>
       </article>
@@ -841,7 +824,7 @@ function renderLiveError(topic, error) {
       <div class="trust-row"><span class="trust-badge analysis">No Live Data</span><span>Verified only</span></div>
       <h4>Live ${topic} unavailable</h4>
       <p>${escapeHtml(error.message || "The live source did not respond. Try again later.")}</p>
-      <footer><span>No fallback cards shown</span><span>Check the API route</span></footer>
+      <footer><span>API error</span><span>Check the backend route</span></footer>
     </article>
   `;
 }
@@ -926,17 +909,7 @@ async function loadLiveData(topic, button) {
 
 function renderMarkets() {
   const container = document.querySelector("#market-grid");
-  const selectedCategory = document.querySelector("#economics-filter")?.value || "all";
-  const selectedLabel = document.querySelector("#economics-filter option:checked")?.textContent || "economics";
-  container.innerHTML = `
-    <article class="metric-card empty-source-card">
-      <div class="trust-row"><span class="trust-badge analysis">Not loaded</span><span>Verified only</span></div>
-      <h4>${escapeHtml(selectedLabel)} data not loaded</h4>
-      <span class="metric-value flat">Waiting</span>
-      <p>No economics cards are shown until the backend returns verified source items for ${escapeHtml(selectedCategory === "all" ? "the selected lanes" : selectedLabel)}.</p>
-      <footer><span>Economics source API</span><span>Use Load Live Economics</span></footer>
-    </article>
-  `;
+  container.innerHTML = "";
 }
 
 function renderMarketsFromLive(items) {
@@ -962,16 +935,7 @@ function renderMarketsFromLive(items) {
     .filter((metric) => selectedCategory === "all" || metric.category === selectedCategory)
     .filter((metric) => metric.item);
   if (!visibleMetrics.length) {
-    const selectedLabel = document.querySelector("#economics-filter option:checked")?.textContent || "this economics lane";
-    container.innerHTML = `
-      <article class="metric-card live-metric-card">
-        <div class="trust-row"><span class="trust-badge analysis">No Live Match</span><span>Verified only</span></div>
-        <h4>${escapeHtml(selectedLabel)}</h4>
-        <span class="metric-value flat">No data</span>
-        <p>No verified live economics item was returned for this selected lane. Try All economics, or check the source endpoint later.</p>
-        <footer><span>Live economics source</span><span>No fallback card shown</span></footer>
-      </article>
-    `;
+    container.innerHTML = "";
     return;
   }
   visibleMetrics.forEach(({ label, item }) => {
@@ -981,7 +945,8 @@ function renderMarketsFromLive(items) {
       <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live check")}</span></div>
       <h4>${escapeHtml(label)}</h4>
       <span class="metric-value up">Live</span>
-      <p>${escapeHtml(`${item.title}: ${item.text}`)}</p>
+      <p>${escapeHtml(`${item.title}: ${item.summary || item.text}`)}</p>
+      ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
       <footer>
         <span>${escapeHtml(item.source || "Live economics source")}</span>
         ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
