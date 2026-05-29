@@ -75,7 +75,7 @@ const defaultSettings = {
   newsSource: "",
   marketSource: "",
   sportsSource: "",
-  modelName: "gpt-4o-mini",
+  modelName: "gpt-4.4",
   tone: "neutral",
   length: "balanced",
   citations: true,
@@ -149,7 +149,7 @@ let dbPromise;
 
 function normalizeModelName(modelName) {
   const value = (modelName || "").trim();
-  if (!value || value === "gpt-5.4-mini" || value === "gpt-5-mini") return defaultSettings.modelName;
+  if (!value || value === "gpt-4o-mini" || value === "gpt-5.4-mini" || value === "gpt-5-mini") return defaultSettings.modelName;
   return value;
 }
 
