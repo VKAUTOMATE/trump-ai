@@ -323,16 +323,7 @@ export async function loadCongress() {
     fetchText(feed.url, 9000).then((xml) => parseRssItems(xml, feed.label, 4))
   )));
   const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
-  if (!items.length) {
-    return [{
-      category: "congress",
-      title: "Congress.gov legislative activity",
-      text: "Congress.gov RSS did not return items, but this lane is wired to official legislative feeds.",
-      source: "Congress.gov RSS",
-      timestamp: "Source ready",
-      url: "https://www.congress.gov/get-alerts",
-    }];
-  }
+  if (!items.length) return [];
   return items.slice(0, 8);
 }
 
@@ -342,16 +333,7 @@ export async function loadCourts(query = "federal court") {
     headers: process.env.COURTLISTENER_API_KEY ? { Authorization: `Token ${process.env.COURTLISTENER_API_KEY}` } : {},
   }, 12000);
   const results = data.results || [];
-  if (!results.length) {
-    return [{
-      category: "courts",
-      title: "CourtListener search ready",
-      text: "No recent court items matched the default query. Try a narrower court or issue search later.",
-      source: "CourtListener legal search",
-      timestamp: "No matches",
-      url: "https://www.courtlistener.com/",
-    }];
-  }
+  if (!results.length) return [];
   return results.slice(0, 6).map((item) => ({
     category: "courts",
     title: item.caseName || item.caseNameFull || "Court opinion",
@@ -390,16 +372,7 @@ export async function loadElections() {
     }));
   });
   const uniqueItems = [...new Map(items.map((item) => [`${item.title}|${item.url}`, item])).values()];
-  if (!uniqueItems.length) {
-    return [{
-      category: "elections",
-      title: "Official election information",
-      text: "Vote.gov and EAC source pages are wired for election administration monitoring.",
-      source: "Vote.gov and EAC",
-      timestamp: "Source ready",
-      url: "https://vote.gov/",
-    }];
-  }
+  if (!uniqueItems.length) return [];
   return uniqueItems.slice(0, 6);
 }
 
@@ -425,16 +398,7 @@ export async function loadAccountability() {
       url: absoluteUrl(url, item.href),
     }));
   });
-  if (!items.length) {
-    return [{
-      category: "oversight",
-      title: "Oversight.gov accountability reports",
-      text: "Oversight.gov source pages are wired for public accountability monitoring.",
-      source: "Oversight.gov",
-      timestamp: "Source ready",
-      url: "https://www.oversight.gov/",
-    }];
-  }
+  if (!items.length) return [];
   return items.slice(0, 8);
 }
 

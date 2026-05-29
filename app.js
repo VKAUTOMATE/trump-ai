@@ -18,12 +18,12 @@ const newsItems = [
 ];
 
 const politicsItems = [
-  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Live now", status: "live" },
-  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Live now", status: "live" },
-  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress.gov RSS route", timestamp: "Live route ready", status: "live" },
-  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "CourtListener route", timestamp: "Live route ready", status: "live" },
-  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "EAC and Vote.gov route", timestamp: "Live route ready", status: "live" },
-  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Oversight.gov route", timestamp: "Live route ready", status: "live" },
+  { category: "federal", title: "Federal Register Monitor", text: "Agency notices, proposed rules, final rules, public comment windows, and publication dates.", source: "Federal Register API", timestamp: "Not loaded yet", status: "manual" },
+  { category: "federal", title: "Agency Rulemaking", text: "EPA, Treasury, Labor, HHS, DHS, Education, Commerce, and other agency action lanes.", source: "Federal Register API", timestamp: "Not loaded yet", status: "manual" },
+  { category: "congress", title: "Congress and Legislation", text: "Bills, hearings, votes, amendments, committees, deadlines, and plain-English policy impact notes.", source: "Congress.gov API", timestamp: "Not loaded yet", status: "manual" },
+  { category: "courts", title: "Courts and Legal Deadlines", text: "Court calendars, rulings, appeals, injunctions, and legal claims that need primary-source review.", source: "CourtListener API", timestamp: "Not loaded yet", status: "manual" },
+  { category: "elections", title: "Election Administration", text: "Ballot deadlines, state election offices, turnout rules, certification dates, and nonpartisan process tracking.", source: "EAC and Vote.gov", timestamp: "Not loaded yet", status: "manual" },
+  { category: "oversight", title: "Public Accountability", text: "Statements, claims, watchdog reports, source gaps, and items to send into Verify Claim mode.", source: "Oversight.gov", timestamp: "Not loaded yet", status: "manual" },
 ];
 
 const sportsItems = [
@@ -742,7 +742,14 @@ function renderLiveCards(topic, items) {
   }
 
   if (!items.length) {
-    container.innerHTML = "";
+    container.innerHTML = `
+      <article class="data-card live-card">
+        <div class="trust-row"><span class="trust-badge analysis">No Live Data</span><span>Verified only</span></div>
+        <h4>No source items returned</h4>
+        <p>The backend did not return verified ${escapeHtml(topic)} items for this selected lane. No fallback cards were shown.</p>
+        <footer><span>${escapeHtml(topic)} API</span><span>Try another dropdown lane</span></footer>
+      </article>
+    `;
     return;
   }
   if (topic === "sports") {
@@ -797,15 +804,19 @@ function renderLiveError(topic, error) {
   const container = document.querySelector(`#${topic}-live-grid`);
   if (!container) return;
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
-  if (staticGrid) {
+  if (staticGrid && topic === "politics") {
+    staticGrid.hidden = true;
+    staticGrid.setAttribute("aria-hidden", "true");
+  } else if (staticGrid) {
     staticGrid.hidden = false;
     staticGrid.removeAttribute("aria-hidden");
   }
   container.innerHTML = `
     <article class="data-card live-card">
+      <div class="trust-row"><span class="trust-badge analysis">No Live Data</span><span>Verified only</span></div>
       <h4>Live ${topic} unavailable</h4>
       <p>${escapeHtml(error.message || "The live source did not respond. Try again later.")}</p>
-      <footer><span>Source pending</span><span>Live-ready cards below</span></footer>
+      <footer><span>No fallback cards shown</span><span>Check the API route</span></footer>
     </article>
   `;
 }
