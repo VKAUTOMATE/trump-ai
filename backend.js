@@ -239,14 +239,24 @@ export async function loadEconomics(category = "all") {
   return (filteredItems.length ? filteredItems : items).slice(0, 14);
 }
 
-export async function loadPolitics() {
-  const settled = await Promise.allSettled([
-    loadFederalRegister(),
-    loadCongress(),
-    loadCourts(),
-    loadElections(),
-    loadAccountability(),
-  ]);
+export async function loadPolitics(category = "all") {
+  const loaders = {
+    federal: loadFederalRegister,
+    congress: loadCongress,
+    courts: loadCourts,
+    elections: loadElections,
+    oversight: loadAccountability,
+  };
+  const selectedLoader = loaders[category];
+  const settled = await Promise.allSettled(selectedLoader
+    ? [selectedLoader()]
+    : [
+      loadFederalRegister(),
+      loadCongress(),
+      loadCourts(),
+      loadElections(),
+      loadAccountability(),
+    ]);
   const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   if (!items.length) throw new Error("Government and politics sources were unavailable.");
   return items.slice(0, 18);
@@ -255,6 +265,7 @@ export async function loadPolitics() {
 export async function loadFederalRegister() {
   const data = await fetchJson("https://www.federalregister.gov/api/v1/documents.json?per_page=6&order=newest");
   return (data.results || []).slice(0, 6).map((item) => ({
+    category: "federal",
     title: item.title || "Federal Register item",
     text: `${item.publication_date || "Recent"} - ${(item.agencies || []).map((agency) => agency.name).slice(0, 2).join(", ") || "Federal agency"}`,
     source: "Federal Register government data",
@@ -270,6 +281,7 @@ export async function loadCongress() {
     const bills = data.bills || [];
     if (bills.length) {
       return bills.slice(0, 8).map((bill) => ({
+        category: "congress",
         title: `${bill.type || "Bill"} ${bill.number || ""}: ${bill.title || "Congressional bill"}`.trim(),
         text: `${bill.latestAction?.actionDate || bill.updateDate || "Recent"} - ${bill.latestAction?.text || "Latest action from Congress.gov."}`,
         source: "Congress.gov API",
@@ -292,6 +304,7 @@ export async function loadCongress() {
   const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   if (!items.length) {
     return [{
+      category: "congress",
       title: "Congress.gov legislative activity",
       text: "Congress.gov RSS did not return items, but this lane is wired to official legislative feeds.",
       source: "Congress.gov RSS",
@@ -310,6 +323,7 @@ export async function loadCourts(query = "federal court") {
   const results = data.results || [];
   if (!results.length) {
     return [{
+      category: "courts",
       title: "CourtListener search ready",
       text: "No recent court items matched the default query. Try a narrower court or issue search later.",
       source: "CourtListener legal search",
@@ -318,6 +332,7 @@ export async function loadCourts(query = "federal court") {
     }];
   }
   return results.slice(0, 6).map((item) => ({
+    category: "courts",
     title: item.caseName || item.caseNameFull || "Court opinion",
     text: `${item.dateFiled || "Recent"} - ${stripHtml(item.snippet || item.court || "CourtListener result")}`,
     source: item.court || "CourtListener legal search",
@@ -345,6 +360,7 @@ export async function loadElections() {
       .filter((item) => item.title.length > 10 && !/skip|menu|search|language|breadcrumb|navigation|^news$/i.test(item.title))
       .slice(0, 3);
     return titleMatches.map((item) => ({
+      category: "elections",
       title: item.title,
       text: `Election administration source loaded from ${label}.`,
       source: label,
@@ -355,6 +371,7 @@ export async function loadElections() {
   const uniqueItems = [...new Map(items.map((item) => [`${item.title}|${item.url}`, item])).values()];
   if (!uniqueItems.length) {
     return [{
+      category: "elections",
       title: "Official election information",
       text: "Vote.gov and EAC source pages are wired for election administration monitoring.",
       source: "Vote.gov and EAC",
@@ -379,6 +396,7 @@ export async function loadAccountability() {
       .filter((item) => item.title.length > 30 && /report|audit|investigat|recommend|review|summary|finding/i.test(item.title))
       .slice(0, 5);
     return titleMatches.map((item) => ({
+      category: "oversight",
       title: item.title,
       text: `Inspector General accountability item from ${label}.`,
       source: label,
@@ -388,6 +406,7 @@ export async function loadAccountability() {
   });
   if (!items.length) {
     return [{
+      category: "oversight",
       title: "Oversight.gov accountability reports",
       text: "Oversight.gov source pages are wired for public accountability monitoring.",
       source: "Oversight.gov",

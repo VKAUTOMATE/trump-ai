@@ -688,7 +688,7 @@ function renderLiveCards(topic, items) {
     renderMarketsFromLive(items);
   }
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
-  if (staticGrid && topic !== "sports" && topic !== "news") {
+  if (staticGrid && topic !== "sports" && topic !== "news" && topic !== "economics") {
     staticGrid.hidden = true;
     staticGrid.setAttribute("aria-hidden", "true");
   }
@@ -804,7 +804,8 @@ async function loadLiveEconomics() {
 }
 
 async function loadLivePolitics() {
-  return (await fetchBackendJson("/api/live/politics")).items || [];
+  const selectedCategory = document.querySelector("#politics-filter")?.value || "all";
+  return (await fetchBackendJson(`/api/live/politics?category=${encodeURIComponent(selectedCategory)}`)).items || [];
 }
 
 async function loadLiveSports() {
@@ -1171,7 +1172,11 @@ document.querySelector("#economics-filter").addEventListener("change", () => {
   }
   renderMarkets();
 });
-document.querySelector("#politics-filter").addEventListener("change", (event) => renderCards("#politics-grid", politicsItems, event.target.value));
+document.querySelector("#politics-filter").addEventListener("change", (event) => {
+  renderCards("#politics-grid", politicsItems, event.target.value);
+  const politicsButton = document.querySelector('.live-button[data-live="politics"]');
+  if (politicsButton) loadLiveData("politics", politicsButton);
+});
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
   const sportsButton = document.querySelector('.live-button[data-live="sports"]');
