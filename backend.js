@@ -284,6 +284,29 @@ export async function loadNews(query = "breaking news") {
   throw new Error(`News sources did not respond: ${errors.join("; ") || "unknown error"}`);
 }
 
+function needsGeneralLookup(prompt = "") {
+  const lower = prompt.toLowerCase();
+  return /\b(current|latest|today|now|club|team|plays for|player|profile|bio|age|born|family|spouse|wife|husband|children|ranking|rank|record|stats|contract|salary|net worth|where is|who is|what is)\b/.test(lower);
+}
+
+async function loadGeneralLookup(query = "") {
+  const searchQuery = query.trim() || "current information";
+  const settled = await Promise.allSettled([
+    loadNews(searchQuery),
+    fetchJson(`https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(searchQuery)}&mode=ArtList&format=json&maxrecords=8&sort=HybridRel`, undefined, 12000)
+      .then((data) => (data.articles || []).slice(0, 8).map((article) => ({
+        title: article.title || "Related source item",
+        text: `${article.seendate || "Recent"} - ${article.domain || "source"}`,
+        source: article.domain || "GDELT",
+        timestamp: article.seendate || "Recent",
+        url: article.url,
+      }))),
+  ]);
+  const items = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+  const uniqueItems = [...new Map(items.map((item) => [`${item.title}|${item.url}`, item])).values()];
+  return uniqueItems.slice(0, 8).map((item) => enrichItem(item, "news"));
+}
+
 export async function loadEconomics(category = "all") {
   const marketRequests = {
     equities: [
@@ -609,7 +632,7 @@ async function buildBackendLiveContext(prompt = "") {
   const requests = [];
   if (intent.topic === "sports") {
     requests.push(["Sports", loadSports(intent.league)]);
-    if (isSpecificSportsResultPrompt(prompt) || /\b(winner|champion|champions|won|final|latest|news|update)\b/.test(lower)) {
+    if (needsGeneralLookup(prompt) || isSpecificSportsResultPrompt(prompt) || /\b(winner|champion|champions|won|final|latest|news|update)\b/.test(lower)) {
       requests.push(["Related sports news", loadNews(prompt)]);
     }
   }
@@ -619,6 +642,9 @@ async function buildBackendLiveContext(prompt = "") {
   }
   if (intent.topic === "economics") requests.push(["Economics and markets", loadEconomics()]);
   if (intent.topic === "news") requests.push(["News", loadNews()]);
+  if (intent.topic === "general" && needsGeneralLookup(prompt)) {
+    requests.push(["General source lookup", loadGeneralLookup(prompt)]);
+  }
   if (intent.topic === "automation") {
     return [
       "Automation planning context:",
@@ -638,6 +664,7 @@ async function buildBackendLiveContext(prompt = "") {
 
   return [
     "Use this backend-fetched live context when relevant. Do not claim it covers everything; mention source limits when needed.",
+    "For person, player, team, club, profile, family, or current-status questions, use General source lookup and Related sports news when present. If a direct source supports the answer, answer directly and cite the source name or URL. Do not say sources do not confirm when the provided context does confirm it.",
     "For sports result questions, answer the opponent/winner and final score first when that information appears in live context. If the opponent or score is missing, say the loaded sources do not confirm that exact detail and name the official event, league, ESPN, or tournament score page to check. Do not provide a partial result as if it is complete.",
     ...sections,
   ].join("\n\n");
