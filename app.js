@@ -53,14 +53,14 @@ const sportsItems = [
 ];
 
 const marketMetrics = [
-  { category: "inflation", label: "Inflation trend", value: "Live-ready", tone: "flat", note: "Load live economics to pull CPI, PCE, wage, rent, and energy source data." },
-  { category: "labor", label: "Labor market", value: "Live-ready", tone: "flat", note: "Load live economics to pull payrolls, claims, unemployment, quits, and participation." },
-  { category: "rates", label: "Fed stance", value: "Live-ready", tone: "flat", note: "Load live economics to pull rates, Treasury data, Fed signals, and credit stress." },
-  { category: "consumer", label: "Consumer", value: "Live-ready", tone: "flat", note: "Load live economics to pull retail, sentiment, delinquency, and savings context." },
-  { category: "equities", label: "Equities", value: "Live-ready", tone: "flat", note: "Load live economics to pull market quotes, breadth context, and earnings pressure." },
-  { category: "dollar", label: "Dollar", value: "Live-ready", tone: "flat", note: "Load live economics to pull rate differentials, dollar strength, and global stress signals." },
-  { category: "oil", label: "Oil", value: "Live-ready", tone: "flat", note: "Load live economics to pull commodity, inflation, and supply-demand signals." },
-  { category: "credit", label: "Credit", value: "Live-ready", tone: "flat", note: "Load live economics to pull spreads, refinancing pressure, and stress indicators." },
+  { category: "inflation", label: "Inflation trend", value: "Not loaded", tone: "flat", note: "Load economics to pull CPI, PCE, wage, rent, and energy source data." },
+  { category: "labor", label: "Labor market", value: "Not loaded", tone: "flat", note: "Load economics to pull payrolls, claims, unemployment, quits, and participation." },
+  { category: "rates", label: "Fed stance", value: "Not loaded", tone: "flat", note: "Load economics to pull rates, Treasury data, Fed signals, and credit stress." },
+  { category: "consumer", label: "Consumer", value: "Not loaded", tone: "flat", note: "Load economics to pull retail, sentiment, delinquency, and savings context." },
+  { category: "equities", label: "Equities", value: "Not loaded", tone: "flat", note: "Load economics to pull market quotes, breadth context, and earnings pressure." },
+  { category: "dollar", label: "Dollar", value: "Not loaded", tone: "flat", note: "Load economics to pull rate differentials, dollar strength, and global stress signals." },
+  { category: "oil", label: "Oil", value: "Not loaded", tone: "flat", note: "Load economics to pull commodity, inflation, and supply-demand signals." },
+  { category: "credit", label: "Credit", value: "Not loaded", tone: "flat", note: "Load economics to pull spreads, refinancing pressure, and stress indicators." },
 ];
 
 const defaultTasks = [
@@ -303,42 +303,42 @@ function renderLandingCards() {
     {
       icon: "\u25a3",
       label: "News",
-      title: liveData.news.length ? `${liveData.news.length} live headlines` : "Headlines queued",
-      text: liveData.news[0]?.title || "GDELT news route ready for the next live refresh.",
+      title: liveData.news.length ? `${liveData.news.length} live headlines` : "No news loaded",
+      text: liveData.news[0]?.title || "Open News and load verified headlines before using this as source context.",
       action: "news",
-      status: liveData.news.length ? "Live" : "Ready",
-      source: liveData.news[0]?.source || "GDELT via backend",
-      time: liveData.news[0]?.timestamp || "Next refresh",
+      status: liveData.news.length ? "Live" : "Not loaded",
+      source: liveData.news[0]?.source || "No source loaded",
+      time: liveData.news[0]?.timestamp || "Waiting",
     },
     {
       icon: "\u25b5",
       label: "Economics",
-      title: liveData.economics.length ? `${liveData.economics.length} market signals` : "Macro lanes armed",
-      text: liveData.economics[0]?.title || "Stocks, inflation, labor, Treasury, oil, dollar, and credit are wired.",
+      title: liveData.economics.length ? `${liveData.economics.length} economics items` : "No economics loaded",
+      text: liveData.economics[0]?.title || "Open Economics and load BLS, Treasury, or market source data.",
       action: "markets",
-      status: liveData.economics.length ? "Live" : "Ready",
-      source: liveData.economics[0]?.source || "Yahoo, Stooq, BLS, Treasury",
-      time: liveData.economics[0]?.timestamp || "Next refresh",
+      status: liveData.economics.length ? "Live" : "Not loaded",
+      source: liveData.economics[0]?.source || "No source loaded",
+      time: liveData.economics[0]?.timestamp || "Waiting",
     },
     {
       icon: "\u2696",
       label: "Politics",
-      title: liveData.politics.length ? `${liveData.politics.length} policy updates` : "Policy feed ready",
-      text: liveData.politics[0]?.title || "Federal Register route ready for agency rules and notices.",
+      title: liveData.politics.length ? `${liveData.politics.length} government items` : "No government loaded",
+      text: liveData.politics[0]?.title || "Open Politics and load verified government source data.",
       action: "politics",
-      status: liveData.politics.length ? "Live" : "Ready",
-      source: liveData.politics[0]?.source || "Federal Register API",
-      time: liveData.politics[0]?.timestamp || "Next refresh",
+      status: liveData.politics.length ? "Live" : "Not loaded",
+      source: liveData.politics[0]?.source || "No source loaded",
+      time: liveData.politics[0]?.timestamp || "Waiting",
     },
     {
       icon: "\u25cf",
       label: "Sports",
-      title: liveData.sports.length ? `${liveData.sports.length} score items` : "Scoreboard ready",
-      text: liveData.sports[0]?.title || "NBA, NFL, MLB, NHL, soccer, golf, tennis, UFC, and boxing are connected.",
+      title: liveData.sports.length ? `${liveData.sports.length} sports items` : "No sports loaded",
+      text: liveData.sports[0]?.title || "Open Sports and load verified score or schedule data.",
       action: "sports",
-      status: liveData.sports.length ? "Live" : "Ready",
-      source: liveData.sports[0]?.source || "ESPN scoreboards",
-      time: liveData.sports[0]?.timestamp || "Next refresh",
+      status: liveData.sports.length ? "Live" : "Not loaded",
+      source: liveData.sports[0]?.source || "No source loaded",
+      time: liveData.sports[0]?.timestamp || "Waiting",
     },
     {
       icon: "\u23f1",
@@ -673,6 +673,31 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
     });
 }
 
+function renderEmptySourceState(containerSelector, title, text, sourceLabel = "No source loaded") {
+  const container = document.querySelector(containerSelector);
+  if (!container) return;
+  container.hidden = false;
+  container.removeAttribute("aria-hidden");
+  container.innerHTML = `
+    <article class="data-card empty-source-card">
+      <div class="trust-row"><span class="trust-badge analysis">Not loaded</span><span>Verified only</span></div>
+      <h4>${escapeHtml(title)}</h4>
+      <p>${escapeHtml(text)}</p>
+      <footer><span>${escapeHtml(sourceLabel)}</span><span>Use the load button above</span></footer>
+    </article>
+  `;
+}
+
+function renderPoliticsEmptyState() {
+  const selectedLabel = document.querySelector("#politics-filter option:checked")?.textContent || "government";
+  renderEmptySourceState(
+    "#politics-grid",
+    `${selectedLabel} data not loaded`,
+    "No government or politics cards are shown until the backend returns verified source items.",
+    "Government source API",
+  );
+}
+
 function economicsSourceLabel(item) {
   const source = `${item.source || ""}`.toLowerCase();
   if (source.includes("bureau of labor")) return "BLS data";
@@ -902,21 +927,16 @@ async function loadLiveData(topic, button) {
 function renderMarkets() {
   const container = document.querySelector("#market-grid");
   const selectedCategory = document.querySelector("#economics-filter")?.value || "all";
-  container.innerHTML = "";
-  marketMetrics
-    .filter((metric) => selectedCategory === "all" || metric.category === selectedCategory)
-    .forEach((metric) => {
-    const card = document.createElement("article");
-    card.className = "metric-card";
-    card.innerHTML = `
-      <div class="trust-row"><span class="trust-badge analysis">Live Ready</span><span>Not loaded yet</span></div>
-      <h4>${metric.label}</h4>
-      <span class="metric-value ${metric.tone}">${metric.value}</span>
-      <p>${metric.note}</p>
-      <footer><span>Source: waiting for live economics</span><span>Click Load Live Economics</span></footer>
-    `;
-    container.append(card);
-  });
+  const selectedLabel = document.querySelector("#economics-filter option:checked")?.textContent || "economics";
+  container.innerHTML = `
+    <article class="metric-card empty-source-card">
+      <div class="trust-row"><span class="trust-badge analysis">Not loaded</span><span>Verified only</span></div>
+      <h4>${escapeHtml(selectedLabel)} data not loaded</h4>
+      <span class="metric-value flat">Waiting</span>
+      <p>No economics cards are shown until the backend returns verified source items for ${escapeHtml(selectedCategory === "all" ? "the selected lanes" : selectedLabel)}.</p>
+      <footer><span>Economics source API</span><span>Use Load Live Economics</span></footer>
+    </article>
+  `;
 }
 
 function renderMarketsFromLive(items) {
@@ -1250,9 +1270,13 @@ document.querySelector("#economics-filter").addEventListener("change", () => {
   renderMarkets();
 });
 document.querySelector("#politics-filter").addEventListener("change", (event) => {
-  renderCards("#politics-grid", politicsItems, event.target.value);
   const politicsButton = document.querySelector('.live-button[data-live="politics"]');
-  if (politicsButton) loadLiveData("politics", politicsButton);
+  const politicsLiveGrid = document.querySelector("#politics-live-grid");
+  if (liveData.politics.length || politicsLiveGrid?.children.length) {
+    if (politicsButton) loadLiveData("politics", politicsButton);
+    return;
+  }
+  renderPoliticsEmptyState();
 });
 document.querySelector("#league-filter").addEventListener("change", (event) => {
   renderCards("#sports-grid", sportsItems, event.target.value, "league");
@@ -1262,8 +1286,7 @@ document.querySelector("#league-filter").addEventListener("change", (event) => {
 document.querySelectorAll(".live-button").forEach((button) => {
   button.addEventListener("click", () => loadLiveData(button.dataset.live, button));
 });
-document.querySelector("#simulate-markets").addEventListener("click", () => {
-  marketMetrics.unshift(marketMetrics.pop());
+document.querySelector("#simulate-markets")?.addEventListener("click", () => {
   renderMarkets();
 });
 document.querySelector("#add-task-button").addEventListener("click", async () => {
@@ -1310,7 +1333,7 @@ async function initializeApp() {
   await loadStoredState();
   refreshBrief();
   renderCards("#news-grid", newsItems);
-  renderCards("#politics-grid", politicsItems);
+  renderPoliticsEmptyState();
   renderCards("#sports-grid", sportsItems, "all", "league");
   renderMarkets();
   renderTasks();
