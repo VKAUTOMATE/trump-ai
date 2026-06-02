@@ -268,7 +268,8 @@ export async function loadNews(query = "breaking news") {
   }
 
   try {
-    const data = await fetchJson("https://api.gdeltproject.org/api/v2/doc/doc?query=breaking%20news&mode=ArtList&format=json&maxrecords=6&sort=HybridRel", undefined, 12000);
+    const gdeltQuery = query === "breaking news" ? "breaking news" : query;
+    const data = await fetchJson(`https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(gdeltQuery)}&mode=ArtList&format=json&maxrecords=6&sort=HybridRel`, undefined, 12000);
     const items = (data.articles || []).slice(0, 6).map((article) => ({
       title: article.title || "Untitled news item",
       text: `${article.seendate || "Recent"} - ${article.domain || "news source"}`,
@@ -287,6 +288,66 @@ export async function loadNews(query = "breaking news") {
 function needsGeneralLookup(prompt = "") {
   const lower = prompt.toLowerCase();
   return /\b(current|latest|today|now|club|team|plays for|player|profile|bio|age|born|family|spouse|wife|husband|children|ranking|rank|record|stats|contract|salary|net worth|where is|who is|what is)\b/.test(lower);
+}
+
+const SPORTS_PLAYER_ALIASES = new Map([
+  ["a rublev", "Andrey Rublev"],
+  ["andrey rublev", "Andrey Rublev"],
+  ["n osaka", "Naomi Osaka"],
+  ["naomi osaka", "Naomi Osaka"],
+  ["j sinner", "Jannik Sinner"],
+  ["jannik sinner", "Jannik Sinner"],
+  ["c alcaraz", "Carlos Alcaraz"],
+  ["carlos alcaraz", "Carlos Alcaraz"],
+  ["n djokovic", "Novak Djokovic"],
+  ["novak djokovic", "Novak Djokovic"],
+  ["c ronaldo", "Cristiano Ronaldo"],
+  ["cristiano ronaldo", "Cristiano Ronaldo"],
+  ["ronaldo", "Cristiano Ronaldo"],
+  ["l messi", "Lionel Messi"],
+  ["lionel messi", "Lionel Messi"],
+  ["messi", "Lionel Messi"],
+  ["k mbappe", "Kylian Mbappe"],
+  ["kylian mbappe", "Kylian Mbappe"],
+  ["s ohtani", "Shohei Ohtani"],
+  ["shohei ohtani", "Shohei Ohtani"],
+  ["a judge", "Aaron Judge"],
+  ["aaron judge", "Aaron Judge"],
+  ["l james", "LeBron James"],
+  ["lebron james", "LeBron James"],
+  ["s curry", "Stephen Curry"],
+  ["stephen curry", "Stephen Curry"],
+  ["p mahomes", "Patrick Mahomes"],
+  ["patrick mahomes", "Patrick Mahomes"],
+  ["c mcdavid", "Connor McDavid"],
+  ["connor mcdavid", "Connor McDavid"],
+  ["a matthews", "Auston Matthews"],
+  ["auston matthews", "Auston Matthews"],
+]);
+
+function normalizedLookupText(prompt = "") {
+  return prompt.toLowerCase().replace(/[^a-z0-9\s.]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function expandSportsPlayerAlias(prompt = "") {
+  const normalized = normalizedLookupText(prompt).replace(/\./g, "");
+  for (const [alias, fullName] of SPORTS_PLAYER_ALIASES.entries()) {
+    if (new RegExp(`\\b${alias.replace(/\s+/g, "\\s+")}\\b`).test(normalized)) return fullName;
+  }
+  return "";
+}
+
+function isSportsPlayerPrompt(prompt = "") {
+  const lower = prompt.toLowerCase();
+  if (expandSportsPlayerAlias(prompt)) return true;
+  if (/\b(player|athlete|footballer|soccer player|tennis player|boxer|fighter|goalkeeper|striker|pitcher|quarterback|nba|nfl|mlb|nhl|ufc|mma|tennis|atp|wta|soccer|world cup|fifa|baseball|basketball|hockey)\b/.test(lower)) return true;
+  return /\b[A-Z]\.?\s+[A-Z][a-z]{2,}\b/.test(prompt.trim());
+}
+
+function buildSportsLookupQuery(prompt = "") {
+  const alias = expandSportsPlayerAlias(prompt);
+  const base = alias || prompt.trim() || "sports player";
+  return `${base} sports player current team club scores stats latest ESPN official`;
 }
 
 async function loadGeneralLookup(query = "") {
@@ -591,6 +652,7 @@ function historyToText(history = []) {
 
 function classifyChatPrompt(prompt = "") {
   const lower = prompt.toLowerCase();
+  if (isSportsPlayerPrompt(prompt)) return { topic: "sports", league: "all" };
   if (/\b(nba|basketball)\b/.test(lower)) return { topic: "sports", league: "NBA" };
   if (/\b(nfl|football)\b/.test(lower)) return { topic: "sports", league: "NFL" };
   if (/\b(mlb|baseball)\b/.test(lower)) return { topic: "sports", league: "MLB" };
@@ -632,8 +694,11 @@ async function buildBackendLiveContext(prompt = "") {
   const requests = [];
   if (intent.topic === "sports") {
     requests.push(["Sports", loadSports(intent.league)]);
+    if (isSportsPlayerPrompt(prompt)) {
+      requests.push(["Sports player/profile lookup", loadGeneralLookup(buildSportsLookupQuery(prompt))]);
+    }
     if (needsGeneralLookup(prompt) || isSpecificSportsResultPrompt(prompt) || /\b(winner|champion|champions|won|final|latest|news|update)\b/.test(lower)) {
-      requests.push(["Related sports news", loadNews(prompt)]);
+      requests.push(["Related sports news", loadNews(buildSportsLookupQuery(prompt))]);
     }
   }
   if (intent.topic === "politics") {
