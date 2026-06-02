@@ -1002,6 +1002,53 @@ function getNotificationLabel(task) {
   return "Dashboard only";
 }
 
+function inferAutomationTopics(task = {}) {
+  const text = `${task.name || ""} ${task.focus || ""} ${task.trigger || ""}`.toLowerCase();
+  const topics = new Set();
+  if (/\b(sport|score|game|match|nba|nfl|mlb|nhl|soccer|tennis|ufc|espn|team|league)\b/.test(text)) topics.add("sports");
+  if (/\b(econom|market|stock|inflation|cpi|pce|jobs|fed|treasury|yield|oil|credit|dollar)\b/.test(text)) topics.add("economics");
+  if (/\b(policy|politic|government|congress|federal|agency|court|election|rule|regulation)\b/.test(text)) topics.add("politics");
+  if (/\b(news|headline|breaking|world|business|technology|risk|security)\b/.test(text)) topics.add("news");
+  if (!topics.size) topics.add("news");
+  return [...topics];
+}
+
+function scoreAutomationItem(task = {}, item = {}) {
+  const words = `${task.name || ""} ${task.focus || ""} ${task.trigger || ""}`
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 3);
+  const haystack = `${item.title || ""} ${item.summary || ""} ${item.text || ""} ${item.source || ""}`.toLowerCase();
+  return words.reduce((score, word) => score + (haystack.includes(word) ? 1 : 0), 0);
+}
+
+function summarizeAutomationItem(item = {}) {
+  const detail = item.summary || item.text || "Live source item loaded.";
+  const source = item.source || "live source";
+  const time = item.timestamp || "latest";
+  const link = item.url ? `\n   Source link: ${item.url}` : "";
+  return `${item.title || "Live update"}\n   ${detail}\n   Source: ${source}. Time: ${time}.${link}`;
+}
+
+async function loadAutomationSource(topic) {
+  const loaders = {
+    news: loadLiveNews,
+    economics: loadLiveEconomics,
+    politics: loadLivePolitics,
+    sports: loadLiveSports,
+  };
+  return loaders[topic] ? loaders[topic]() : [];
+}
+
+function pickAutomationItems(task, items = []) {
+  const uniqueItems = [...new Map(items.map((item) => [`${item.title || ""}|${item.url || item.source || ""}`, item])).values()];
+  return uniqueItems
+    .map((item) => ({ item, score: scoreAutomationItem(task, item) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map(({ item }) => item);
+}
+
 function renderAlertSummary() {
   const activeTasks = tasks.filter((task) => task.active);
   const notificationTasks = tasks.filter((task) => task.active && task.channel !== "dashboard");
@@ -1022,8 +1069,27 @@ async function runAutomationCheck() {
   renderReadiness();
   renderLandingCards();
   const activeTasks = tasks.filter((task) => task.active);
-  const alertLines = activeTasks.map((task) => `${task.name}: ${task.cadence}${task.scheduleTime ? ` at ${task.scheduleTime}` : ""}; notify by ${getNotificationLabel(task)}; trigger: ${task.trigger || "any important change"}.`);
-  addMessage("ai", `Automation check completed at ${checkedAt}. ${activeTasks.length} active alert${activeTasks.length === 1 ? "" : "s"} queued.\n\n${alertLines.join("\n")}\n\nEmail/text delivery is configured as routing data here; sending requires a backend notification service such as SendGrid, Twilio, or a serverless function.`);
+  if (!activeTasks.length) {
+    addMessage("ai", `Automation check completed at ${checkedAt}. No active alerts are turned on.`);
+    return;
+  }
+
+  const topics = [...new Set(activeTasks.flatMap(inferAutomationTopics))];
+  const sourceResults = await Promise.allSettled(topics.map((topic) => loadAutomationSource(topic)));
+  const sourceMap = Object.fromEntries(sourceResults.map((result, index) => [topics[index], result.status === "fulfilled" ? result.value : []]));
+  const alertLines = activeTasks.map((task) => {
+    const taskTopics = inferAutomationTopics(task);
+    const sourceItems = taskTopics.flatMap((topic) => sourceMap[topic] || []);
+    const pickedItems = pickAutomationItems(task, sourceItems);
+    const schedule = `${task.cadence}${task.scheduleTime ? ` at ${task.scheduleTime}` : ""}`;
+    const route = getNotificationLabel(task);
+    if (!pickedItems.length) {
+      return `${task.name}\n- Schedule: ${schedule}. Notify: ${route}.\n- Result: no matching live item returned from ${taskTopics.join(", ")} routes on this check.`;
+    }
+    return `${task.name}\n- Schedule: ${schedule}. Notify: ${route}.\n- Trigger: ${task.trigger || "important change"}.\n- Live result:\n   ${pickedItems.map(summarizeAutomationItem).join("\n\n   ")}`;
+  });
+  const sourceSummary = topics.map((topic) => `${topic}: ${(sourceMap[topic] || []).length} item${(sourceMap[topic] || []).length === 1 ? "" : "s"}`).join(", ");
+  addMessage("ai", `Automation check completed at ${checkedAt}.\n\nLive API sources checked: ${sourceSummary}.\n\n${alertLines.join("\n\n")}\n\nEmail/text delivery is still routing data here; sending needs a backend notification service such as SendGrid, Twilio, or a scheduled Vercel job.`);
 }
 
 function renderSettings() {
