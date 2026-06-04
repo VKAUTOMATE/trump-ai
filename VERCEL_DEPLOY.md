@@ -16,7 +16,7 @@ Use Vercel if Render asks for payment.
 7. Add environment variables:
 
    - `OPENAI_API_KEY` = your OpenAI key
-   - `OPENAI_MODEL` = `gpt-5.4-mini`
+   - `OPENAI_MODEL` = `gpt-4o` or leave this variable unset to use the app default
    - `ALPHA_VANTAGE_API_KEY` = optional
 
 8. Click **Deploy**.
