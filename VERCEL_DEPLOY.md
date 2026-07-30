@@ -18,6 +18,10 @@ Use Vercel if Render asks for payment.
    - `OPENAI_API_KEY` = your OpenAI key
    - `OPENAI_MODEL` = `gpt-4o` or leave this variable unset to use the app default
    - `ALPHA_VANTAGE_API_KEY` = optional
+   - `BACKEND_SHARED_KEY` = optional, recommended. Without this, `/api/chat` is open to
+     anyone who finds your Vercel URL, and they can spend your OpenAI quota. Set this to
+     any long random string, then paste the same string into the app's **Settings > AI
+     Connection > Backend shared key** field so the frontend can authenticate.
 
 8. Click **Deploy**.
 9. Copy your Vercel URL.

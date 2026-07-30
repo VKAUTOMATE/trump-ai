@@ -71,7 +71,7 @@ const defaultTasks = [
 
 const defaultSettings = {
   backendApiUrl: "",
-  openaiApiKey: "",
+  backendSharedKey: "",
   newsSource: "",
   marketSource: "",
   sportsSource: "",
@@ -123,6 +123,7 @@ function getApiBase() {
 async function fetchBackendJson(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  if (settings.backendSharedKey && !headers.Authorization) headers.Authorization = `Bearer ${settings.backendSharedKey}`;
   const response = await fetch(`${getApiBase()}${path}`, {
     ...options,
     headers,
@@ -1094,7 +1095,7 @@ async function runAutomationCheck() {
 
 function renderSettings() {
   document.querySelector("#backend-api-url").value = settings.backendApiUrl;
-  document.querySelector("#openai-api-key").value = settings.openaiApiKey;
+  document.querySelector("#backend-shared-key").value = settings.backendSharedKey;
   document.querySelector("#news-source").value = settings.newsSource;
   document.querySelector("#market-source").value = settings.marketSource;
   document.querySelector("#sports-source").value = settings.sportsSource;
@@ -1146,7 +1147,7 @@ function renderPreferenceSummary() {
 function collectSettingsFromForm() {
   return {
     backendApiUrl: document.querySelector("#backend-api-url").value.trim(),
-    openaiApiKey: document.querySelector("#openai-api-key").value.trim(),
+    backendSharedKey: document.querySelector("#backend-shared-key").value.trim(),
     newsSource: document.querySelector("#news-source").value.trim(),
     marketSource: document.querySelector("#market-source").value.trim(),
     sportsSource: document.querySelector("#sports-source").value.trim(),
@@ -1313,7 +1314,7 @@ document.querySelector("#add-task-button").addEventListener("click", async () =>
 });
 document.querySelector("#run-alerts-button").addEventListener("click", runAutomationCheck);
 document.querySelector("#export-tasks-button").addEventListener("click", async () => {
-  const { openaiApiKey, ...exportableSettings } = settings;
+  const { backendSharedKey, ...exportableSettings } = settings;
   const payload = JSON.stringify({ database: DB_NAME, settings: exportableSettings, alerts: tasks }, null, 2);
   if (navigator.clipboard) {
     try {
