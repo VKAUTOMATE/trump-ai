@@ -1,16 +1,11 @@
-import { chat } from "../backend.js";
-import { applyCors } from "./_utils.js";
+import { loadCongress } from "../../backend.js";
+import { applyCors } from "../_utils.js";
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "POST required" });
-    return;
-  }
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    res.status(200).json(await chat(body));
+    res.status(200).json({ items: await loadCongress() });
   } catch (error) {
-    res.status(500).json({ error: error.message || "Chat request failed" });
+    res.status(500).json({ error: error.message || "Congress request failed" });
   }
 }

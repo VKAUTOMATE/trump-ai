@@ -1,0 +1,324 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TRUMP AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=20260529-gpt-4o-model" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span>T</span>
+            <small>AI</small>
+          </div>
+          <div>
+            <p class="eyebrow">AI Workspace</p>
+            <h1>TRUMP AI</h1>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Primary">
+          <button class="nav-item active" data-view="command"><span class="nav-icon">&#8984;</span><span>Command</span><small>Ask anything</small></button>
+          <button class="nav-item" data-view="automation"><span class="nav-icon">&#9201;</span><span>Automation</span><small>Tasks and alerts</small></button>
+          <button class="nav-item" data-view="news"><span class="nav-icon">&#9635;</span><span>News</span><small>Briefing desk</small></button>
+          <button class="nav-item" data-view="sports"><span class="nav-icon">&#9679;</span><span>Sports</span><small>Scores and storylines</small></button>
+          <button class="nav-item" data-view="settings"><span class="nav-icon">&#9881;</span><span>Settings</span><small>Data sources</small></button>
+        </nav>
+
+        <div class="sidebar-card">
+          <p class="card-label">System mode</p>
+          <div class="mode-row"><span class="status-dot"></span><strong>Analyst</strong></div>
+          <p>Neutral summaries, source-aware research, and automations for repeat checks.</p>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">AI workspace</p>
+            <h2 id="view-title">Command Center</h2>
+          </div>
+          <div class="top-actions">
+            <button id="refresh-button" class="icon-button" title="Refresh briefings" aria-label="Refresh briefings"><span>&#8635;</span></button>
+            <button id="theme-button" class="icon-button" title="Change theme" aria-label="Change theme"><span>&#9680;</span></button>
+          </div>
+        </header>
+
+        <section id="command" class="view active">
+          <div class="dashboard-hero">
+            <div>
+              <p class="eyebrow">Dashboard</p>
+              <h3>TRUMP AI Command Dashboard</h3>
+              <p>Ask anything, get general AI answers, use live data, save alerts, search sports, and manage your personal settings from one clear home screen.</p>
+            </div>
+            <button class="dashboard-action" data-jump="settings"><span class="button-icon">&#9881;</span>Personalize</button>
+          </div>
+
+          <div id="landing-live-grid" class="landing-live-grid"></div>
+
+          <article class="trust-panel">
+            <div>
+              <p class="card-label">Trust Layer</p>
+              <h4>Fact vs Opinion Labels</h4>
+              <p>Source cards appear only after data loads. Empty states stay marked as not loaded so the dashboard does not imply facts it has not received.</p>
+            </div>
+            <button class="subtle" data-prompt="Verify this claim: "><span class="button-icon">&#10003;</span>Verify Claim</button>
+          </article>
+
+          <div class="dashboard-grid">
+            <article class="dashboard-tile" data-jump="news">
+              <span class="tile-icon">&#9635;</span>
+              <div><strong>News</strong><p>GDELT headlines, source names, timestamps, and article links.</p></div>
+              <button type="button">Open</button>
+            </article>
+            <article class="dashboard-tile" data-jump="sports">
+              <span class="tile-icon">&#9679;</span>
+              <div><strong>Sports</strong><p>Scores and schedules for U.S. sports, soccer, golf, tennis, UFC, and boxing.</p></div>
+              <button type="button">Open</button>
+            </article>
+            <article class="dashboard-tile" data-jump="automation">
+              <span class="tile-icon">&#9201;</span>
+              <div><strong>Automation</strong><p>Saved alert rules, cadence, triggers, last-check time, and notification routes.</p></div>
+              <button type="button">Open</button>
+            </article>
+            <article class="dashboard-tile" data-jump="settings">
+              <span class="tile-icon">&#9881;</span>
+              <div><strong>Preferences</strong><p>Favorite teams, tickers, topics, region, model, and backend route.</p></div>
+              <button type="button">Open</button>
+            </article>
+          </div>
+
+          <div class="command-grid">
+            <section class="chat-panel">
+              <div class="chat-tools">
+                <div class="assistant-title">
+                  <span class="assistant-avatar" aria-hidden="true"><span></span></span>
+                  <div>
+                    <strong>TRUMP AI Assistant</strong>
+                    <small>Personal AI assistant</small>
+                  </div>
+                </div>
+                <div class="chat-actions">
+                  <button id="export-chat-button" class="subtle" type="button"><span class="button-icon">&#8681;</span>Export</button>
+                  <button id="clear-chat-button" class="subtle" type="button"><span class="button-icon">&#8634;</span>New Chat</button>
+                </div>
+              </div>
+              <div id="chat-log" class="chat-log" aria-live="polite"></div>
+              <form id="chat-form" class="chat-form">
+                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask any question..." />
+                <button type="submit"><span class="button-icon">&#10148;</span>Send</button>
+              </form>
+            </section>
+
+            <section class="brief-stack">
+              <article class="brief-card accent-blue">
+                <p class="card-label">Today</p>
+                <h3>Daily Intelligence Brief</h3>
+                <p id="daily-brief"></p>
+              </article>
+              <article class="brief-card">
+                <p class="card-label">Quick Prompts</p>
+                <div class="prompt-list">
+                  <button data-prompt="Answer this question: ">Ask anything</button>
+                  <button data-prompt="Explain this in simple terms: ">Explain</button>
+                  <button data-prompt="Help me write this: ">Write</button>
+                  <button data-prompt="Help me solve this step by step: ">Tutor</button>
+                  <button data-prompt="Verify this claim: ">Verify claim</button>
+                  <button data-prompt="Give me a five point news briefing.">News briefing</button>
+                  <button data-prompt="What sports stories should I watch tonight?">Sports slate</button>
+                </div>
+              </article>
+              <article class="brief-card">
+                <p class="card-label">Readiness</p>
+                <div id="readiness-list" class="readiness-list"></div>
+              </article>
+            </section>
+          </div>
+        </section>
+
+        <section id="automation" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Automations</p>
+              <h3>Task and Alert Builder</h3>
+            </div>
+            <button id="add-task-button"><span class="button-icon">&#43;</span>Add Automation</button>
+          </div>
+          <div class="automation-toolbar">
+            <button id="run-alerts-button" class="subtle"><span class="button-icon">&#9654;</span>Run Check Now</button>
+            <button id="export-tasks-button" class="subtle"><span class="button-icon">&#8681;</span>Export JSON</button>
+            <button id="reset-tasks-button" class="subtle"><span class="button-icon">&#8634;</span>Reset Defaults</button>
+          </div>
+          <div id="alert-summary" class="alert-summary"></div>
+          <div id="task-list" class="task-list"></div>
+        </section>
+
+        <section id="news" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">News</p>
+              <h3>Briefing Desk</h3>
+            </div>
+            <div class="section-actions">
+              <select id="news-filter" aria-label="Filter news">
+                <option value="all">All</option>
+                <option value="us">U.S.</option>
+                <option value="world">World</option>
+                <option value="business">Business</option>
+                <option value="technology">Technology</option>
+                <option value="markets">Markets</option>
+              </select>
+              <button class="live-button" data-live="news"><span class="button-icon">&#8623;</span>Load Live News</button>
+            </div>
+          </div>
+          <div id="news-live-grid" class="live-grid"></div>
+          <div id="news-grid" class="content-grid"></div>
+        </section>
+
+        <section id="sports" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Sports</p>
+              <h3>Scores, Schedules, and Angles</h3>
+            </div>
+            <div class="section-actions">
+              <select id="league-filter" aria-label="Filter league">
+                <option value="all">All leagues</option>
+                <option value="NBA">NBA</option>
+                <option value="NFL">NFL</option>
+                <option value="MLB">MLB</option>
+                <option value="NHL">NHL</option>
+                <option value="GOLF">Golf</option>
+                <option value="TENNIS">Tennis</option>
+                <option value="SOCCER">Soccer - All</option>
+                <option value="EPL">Premier League</option>
+                <option value="UCL">Champions League</option>
+                <option value="WORLDCUP">World Cup</option>
+                <option value="WWC">Women's World Cup</option>
+                <option value="LALIGA">La Liga</option>
+                <option value="SERIEA">Serie A</option>
+                <option value="BUNDESLIGA">Bundesliga</option>
+                <option value="LIGUE1">Ligue 1</option>
+                <option value="MLS">MLS</option>
+                <option value="LIGAMX">Liga MX</option>
+                <option value="NWSL">NWSL</option>
+                <option value="UEL">Europa League</option>
+                <option value="UFC">UFC</option>
+                <option value="BOXING">Boxing</option>
+              </select>
+              <button class="live-button" data-live="sports"><span class="button-icon">&#8981;</span>Search Live Sports</button>
+            </div>
+          </div>
+          <p class="section-note">Choose a league, then search live scores and schedules across U.S. sports, soccer, combat sports, golf, and tennis.</p>
+          <div id="sports-live-grid" class="live-grid"></div>
+          <div id="sports-grid" class="content-grid"></div>
+        </section>
+
+        <section id="settings" class="view">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Settings</p>
+              <h3>Preferences and Model Console</h3>
+            </div>
+            <button id="save-settings-button"><span class="button-icon">&#10003;</span>Save Settings</button>
+          </div>
+          <div class="settings-grid">
+            <article class="settings-panel">
+              <h4>AI Connection</h4>
+              <label><span>Backend API URL</span><input id="backend-api-url" type="url" autocomplete="off" placeholder="Leave blank for same server, or paste Render/Vercel URL" /></label>
+              <label><span>Backend shared key</span><input id="backend-shared-key" type="password" autocomplete="off" placeholder="Only needed if BACKEND_SHARED_KEY is set on the backend" /></label>
+              <label><span>Primary model</span><input id="model-name" type="text" placeholder="gpt-4o" /></label>
+              <p class="settings-note">Live data and AI requests now go through your backend. Put secret keys in backend environment variables, not browser code.</p>
+            </article>
+            <article class="settings-panel">
+              <h4>Live Data Sources</h4>
+              <label><span>News source</span><input id="news-source" type="text" placeholder="Default: GDELT headlines API" /></label>
+              <label><span>Market/economics source</span><input id="market-source" type="text" placeholder="Default: Stooq, BLS, U.S. Treasury" /></label>
+              <label><span>Sports source</span><input id="sports-source" type="text" placeholder="Default: ESPN scoreboard APIs" /></label>
+            </article>
+            <article class="settings-panel">
+              <h4>Output Profile</h4>
+              <label><span>Tone</span>
+                <select id="tone-setting">
+                  <option value="neutral">Neutral analyst</option>
+                  <option value="executive">Executive brief</option>
+                  <option value="skeptical">Skeptical fact-checker</option>
+                  <option value="sportsdesk">Sports desk</option>
+                </select>
+              </label>
+              <label><span>Default brief length</span>
+                <select id="length-setting">
+                  <option value="short">Short</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="deep">Deep dive</option>
+                </select>
+              </label>
+              <label class="check-row"><input id="citations-setting" type="checkbox" /> <span>Require citations before making factual claims</span></label>
+              <label class="check-row"><input id="alerts-setting" type="checkbox" /> <span>Flag urgent changes in the command center</span></label>
+            </article>
+            <article class="settings-panel preference-panel">
+              <h4>My Preferences</h4>
+              <label><span>Favorite teams</span><input id="favorite-teams" type="text" placeholder="Lakers, Yankees, Cowboys, UFC" /></label>
+              <label><span>Market watchlist</span><input id="market-watchlist" type="text" placeholder="SPY, QQQ, BTC, AAPL" /></label>
+              <label><span>Topics</span><input id="topic-watchlist" type="text" placeholder="AI, inflation, elections, boxing, tennis" /></label>
+              <label><span>Home region</span><input id="home-region" type="text" placeholder="United States, New York, global..." /></label>
+            </article>
+          </div>
+          <article class="brief-card profile-card">
+            <p class="card-label">Saved Profile</p>
+            <div id="preference-summary" class="preference-summary"></div>
+          </article>
+          <article class="brief-card">
+            <p class="card-label">Integration Plan</p>
+            <div id="integration-plan" class="integration-plan"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <template id="task-template">
+      <article class="task-card">
+        <label><span>Task name</span><input class="task-name" type="text" /></label>
+        <label>
+          <span>Cadence</span>
+          <select class="task-cadence">
+            <option>Hourly</option>
+            <option>Daily</option>
+            <option>Weekly</option>
+            <option>Market open</option>
+          </select>
+        </label>
+        <label><span>Schedule time</span><input class="task-time" type="time" /></label>
+        <label><span>Focus</span><textarea class="task-focus" rows="3"></textarea></label>
+        <label>
+          <span>Notify by</span>
+          <select class="task-channel">
+            <option value="dashboard">Dashboard only</option>
+            <option value="email">Email</option>
+            <option value="sms">Text message</option>
+            <option value="both">Email and text</option>
+          </select>
+        </label>
+        <label><span>Email</span><input class="task-email" type="email" placeholder="you@example.com" /></label>
+        <label><span>Phone for text</span><input class="task-phone" type="tel" placeholder="+1 555 000 0000" /></label>
+        <label><span>Trigger</span><input class="task-trigger" type="text" placeholder="Breaking change, threshold, keyword, team, ticker..." /></label>
+        <label class="check-row"><input class="task-active" type="checkbox" /> <span>Active</span></label>
+        <div class="task-actions">
+          <button class="save-task" type="button">Save</button>
+          <button class="delete-task subtle" type="button">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js?v=20260604-stable-vercel-backend"></script>
+  </body>
+</html>
