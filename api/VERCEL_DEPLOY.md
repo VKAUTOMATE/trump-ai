@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260529-gpt-4o-model" />
+    <link rel="stylesheet" href="styles.css?v=20260731-formatting-fix" />
   </head>
   <body>
     <div class="app-shell">
@@ -319,6 +319,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260604-stable-vercel-backend"></script>
+    <script src="app.js?v=20260731-formatting-fix"></script>
   </body>
 </html>

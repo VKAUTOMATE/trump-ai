@@ -731,6 +731,7 @@ button:disabled {
   display: grid;
   gap: 8px;
   min-width: 0;
+  overflow-wrap: anywhere;
   padding: 10px 12px;
 }
 
@@ -742,6 +743,8 @@ button:disabled {
 
 .message-text {
   margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   white-space: normal;
 }
 
@@ -770,6 +773,15 @@ button:disabled {
 
 .message-text strong {
   font-weight: 700;
+}
+
+.message-text a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.message.user .message-text a {
+  color: #fff;
 }
 
 .message-actions {
