@@ -748,7 +748,7 @@ export async function chat(body) {
     timeZone: "America/New_York",
   });
   const messages = [
-    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", `Today is ${currentDate}. Answer current-event, sports, market, and policy questions against this date. Never say "as of my last knowledge update." If the backend live context does not answer a current question, say the loaded sources do not confirm it and name the official source to check.`, "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked. For sports result questions, do not stop at a storyline: include opponent/winner, score, round/date, and source when known.", backendLiveContext].filter(Boolean).join("\n\n") },
+    { role: "system", content: [body.systemPrompt || "You are TRUMP AI, a neutral general assistant.", `Today is ${currentDate}. Answer current-event, sports, market, and policy questions against this date. Never say "as of my last knowledge update." If the backend live context does not answer a current question, say the loaded sources do not confirm it and name the official source to check.`, "Answer any normal user question directly. News, politics, government, economics, sports, and automation are optional specialties, not limits. When live context is available, use it. When live context is insufficient, say the loaded sources do not confirm the answer and name what source should be checked. For sports result questions, do not stop at a storyline: include opponent/winner, score, round/date, and source when known.", "When citing a source URL, always use short Markdown link syntax like [Source] or [Reuters] rather than writing out the raw URL — this keeps responses compact and readable.", backendLiveContext].filter(Boolean).join("\n\n") },
     ...(body.history || []).slice(-8).map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: (item.content || []).map((content) => content.text || "").join(" ").trim() || "",
@@ -764,7 +764,7 @@ export async function chat(body) {
     body: JSON.stringify({
       model: normalizeModelName(body.modelName),
       messages,
-      max_tokens: body.maxOutputTokens || 900,
+      max_tokens: body.maxOutputTokens || 1600,
     }),
   }, 45000);
   return { text: extractResponseText(response) || "I received an empty response from the model." };

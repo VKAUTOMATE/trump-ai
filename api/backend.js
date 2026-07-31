@@ -299,7 +299,8 @@ function formatMessageHtml(rawText) {
   const inline = (text) => text
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, "<em>$1</em>")
-    .replace(/(https?:\/\/[^\s)<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/(?<!href=")(?<!>)(https?:\/\/[^\s)<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 
   lines.forEach((line) => {
     const trimmed = line.trim();
