@@ -1,4 +1,4 @@
-﻿const views = {
+const views = {
   command: "Command Center",
   automation: "Automation Builder",
   news: "News Briefing",
@@ -245,7 +245,6 @@ async function saveSettings() {
     addMessage("ai", `Settings saved locally, but database sync failed: ${error.message}`);
   }
 }
-
 function sanitizeChatHistory(value) {
   if (!Array.isArray(value)) return [];
   return value
@@ -275,6 +274,49 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function formatMessageHtml(rawText) {
+  const escaped = escapeHtml(rawText);
+  const lines = escaped.split("\n");
+  const htmlParts = [];
+  let listBuffer = [];
+  let listType = null;
+
+  const flushList = () => {
+    if (listBuffer.length) {
+      htmlParts.push(`<${listType}>${listBuffer.map((item) => `<li>${item}</li>`).join("")}</${listType}>`);
+      listBuffer = [];
+      listType = null;
+    }
+  };
+
+  const inline = (text) => text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, "<em>$1</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/(?<!href=")(?<!>)(https?:\/\/[^\s)<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    const numberedMatch = trimmed.match(/^\d+[.)]\s+(.*)$/);
+
+    if (bulletMatch) {
+      if (listType !== "ul") flushList();
+      listType = "ul";
+      listBuffer.push(inline(bulletMatch[1]));
+    } else if (numberedMatch) {
+      if (listType !== "ol") flushList();
+      listType = "ol";
+      listBuffer.push(inline(numberedMatch[1]));
+    } else {
+      flushList();
+      if (trimmed) htmlParts.push(`<p>${inline(trimmed)}</p>`);
+    }
+  });
+  flushList();
+  return htmlParts.join("") || `<p>${inline(escaped)}</p>`;
 }
 
 function splitList(value) {
@@ -374,9 +416,10 @@ function addMessage(role, text) {
   avatar.textContent = role === "user" ? "YOU" : "AI";
   const bubble = document.createElement("div");
   bubble.className = "message-bubble";
-  const textNode = document.createElement("p");
+  const textNode = document.createElement("div");
   textNode.className = "message-text";
-  textNode.textContent = text;
+  textNode.dataset.rawText = text;
+  textNode.innerHTML = formatMessageHtml(text);
   const actions = document.createElement("div");
   actions.className = "message-actions";
   const likeButton = createMessageAction("Like", "&#128077;");
@@ -387,11 +430,11 @@ function addMessage(role, text) {
   copyButton.title = "Copy";
   copyButton.setAttribute("aria-label", "Copy message");
   copyButton.innerHTML = "&#10697;";
-  copyButton.addEventListener("click", () => copyMessageText(text, copyButton));
+  copyButton.addEventListener("click", () => copyMessageText(textNode.dataset.rawText, copyButton));
   const moreButton = createMessageAction("More", "&#8943;");
   likeButton.addEventListener("click", () => toggleMessageReaction(likeButton, dislikeButton));
   dislikeButton.addEventListener("click", () => toggleMessageReaction(dislikeButton, likeButton));
-  moreButton.addEventListener("click", () => copyMessageText(text, copyButton));
+  moreButton.addEventListener("click", () => copyMessageText(textNode.dataset.rawText, copyButton));
   actions.append(likeButton, dislikeButton, copyButton, moreButton);
   bubble.append(textNode, actions);
   message.append(avatar, bubble);
@@ -399,6 +442,14 @@ function addMessage(role, text) {
   chatLog.append(message);
   chatLog.scrollTop = chatLog.scrollHeight;
   return message;
+}
+
+function updateMessageText(messageEl, text) {
+  const textNode = messageEl.querySelector(".message-text");
+  if (!textNode) return;
+  textNode.dataset.rawText = text;
+  textNode.innerHTML = formatMessageHtml(text);
+  chatLog.scrollTop = chatLog.scrollHeight;
 }
 
 function createMessageAction(label, html) {
@@ -838,9 +889,9 @@ function mapNewsLiveToLanes(items = []) {
     };
   });
 }
-
 function mapSportsLiveToLanes(items = []) {
   if (!items.length) return sportsItems;
+
   const selectedLeague = document.querySelector("#league-filter")?.value || "all";
   return items.map((item) => ({
     league: item.league || selectedLeague,
@@ -1122,6 +1173,7 @@ function renderPreferenceChips(label, value) {
         <strong>${label}</strong>
         <span class="empty-chip">Not saved yet</span>
       </div>
+      </div>
     `;
   }
   return `
@@ -1260,11 +1312,11 @@ chatForm.addEventListener("submit", async (event) => {
 
   try {
     const reply = await askOpenAI(prompt);
-    thinkingMessage.textContent = reply;
+    updateMessageText(thinkingMessage, reply);
     await recordChatMessage("ai", reply);
   } catch (error) {
     const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(prompt)}`;
-    thinkingMessage.textContent = fallback;
+    updateMessageText(thinkingMessage, fallback);
     await recordChatMessage("ai", fallback);
   } finally {
     chatInput.disabled = false;
