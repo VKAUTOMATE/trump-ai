@@ -398,6 +398,7 @@ button:disabled {
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+}
 
 .landing-live-grid {
   display: grid;
