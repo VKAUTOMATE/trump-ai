@@ -310,9 +310,10 @@ function formatMessageHtml(rawText) {
       if (listType !== "ol") flushList();
       listType = "ol";
       listBuffer.push(inline(numberedMatch[1]));
+    } else if (!trimmed) {
     } else {
       flushList();
-      if (trimmed) htmlParts.push(`<p>${inline(trimmed)}</p>`);
+      htmlParts.push(`<p>${inline(trimmed)}</p>`);
     }
   });
   flushList();
