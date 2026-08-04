@@ -774,14 +774,37 @@ button:disabled {
 }
 
 .message-text a {
-  color: var(--primary);
-  text-decoration: underline;
+  align-items: center;
+  background: rgba(193, 18, 31, 0.1);
+  border-radius: 999px;
+  color: var(--primary-dark);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 4px;
+  padding: 3px 9px;
+  text-decoration: none;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.message-text a:hover {
+  background: rgba(193, 18, 31, 0.18);
+}
+
+.message-text a::before {
+  content: "\2197";
+  font-size: 11px;
 }
 
 .message.user .message-text a {
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
+.message.user .message-text a:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 .message-actions {
   align-items: center;
   display: flex;
