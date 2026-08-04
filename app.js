@@ -278,7 +278,8 @@ function escapeHtml(value) {
 
 function formatMessageHtml(rawText) {
   const escaped = escapeHtml(rawText);
-  const lines = escaped.split("\n");
+  const joinedLinks = escaped.replace(/\]\s*\(/g, "](");
+  const lines = joinedLinks.split("\n");
   const htmlParts = [];
   let listBuffer = [];
   let listType = null;
