@@ -121,12 +121,34 @@
                 <span id="attachment-chip-name"></span>
                 <button type="button" id="attachment-remove-button" aria-label="Remove attachment">&times;</button>
               </div>
+              <div id="recording-chip" class="attachment-chip" hidden>
+                <span class="attachment-chip-icon" aria-hidden="true">&#127908;</span>
+                <audio id="recording-audio" controls></audio>
+                <span id="recording-duration"></span>
+                <button type="button" id="recording-remove-button" aria-label="Remove recording">&times;</button>
+              </div>
               <form id="chat-form" class="chat-form">
                 <input type="file" id="chat-attach-input" accept=".txt,.md,.csv,.json,.log" hidden />
-                <button type="button" id="chat-attach-button" class="icon-button" title="Attach a text file" aria-label="Attach a file">+</button>
-                <input id="chat-input" type="text" autocomplete="off" placeholder="Ask any question..." />
-                <button type="button" id="chat-mic-button" class="icon-button" title="Voice input" aria-label="Use microphone">&#127908;</button>
-                <button type="submit" id="chat-send-button"><span class="button-icon">&#10148;</span>Send</button>
+                <div class="chat-input-shell">
+                  <button type="button" id="chat-attach-button" class="pill-icon-button" title="Attach a text file" aria-label="Attach a file">+</button>
+                  <input id="chat-input" type="text" autocomplete="off" placeholder="Ask any question..." />
+                  <div class="chat-mode">
+                    <button type="button" id="chat-mode-button" class="pill-mode-button" aria-haspopup="true" aria-expanded="false">
+                      <span id="chat-mode-label">Build</span>
+                      <span class="mode-caret" aria-hidden="true">&#9662;</span>
+                    </button>
+                    <div id="chat-mode-menu" class="chat-mode-menu" hidden role="menu">
+                      <button type="button" data-mode="build" role="menuitem">Build</button>
+                      <button type="button" data-mode="discover" role="menuitem">Discover</button>
+                      <button type="button" data-mode="discuss" role="menuitem">Discuss</button>
+                    </div>
+                  </div>
+                  <button type="button" id="chat-mic-button" class="pill-icon-button" title="Record a voice message" aria-label="Record a voice message">
+                    <span id="chat-mic-icon">&#127908;</span>
+                    <span id="chat-mic-timer" class="mic-timer" hidden>0:00</span>
+                  </button>
+                  <button type="submit" id="chat-send-button" class="pill-icon-button pill-send-button" aria-label="Send message">&#10148;</button>
+                </div>
               </form>
             </section>
 

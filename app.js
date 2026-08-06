@@ -93,9 +93,17 @@ const chatSendButton = document.querySelector("#chat-send-button");
 const chatAttachButton = document.querySelector("#chat-attach-button");
 const chatAttachInput = document.querySelector("#chat-attach-input");
 const chatMicButton = document.querySelector("#chat-mic-button");
+const chatMicTimer = document.querySelector("#chat-mic-timer");
 const attachmentChip = document.querySelector("#attachment-chip");
 const attachmentChipName = document.querySelector("#attachment-chip-name");
 const attachmentRemoveButton = document.querySelector("#attachment-remove-button");
+const recordingChip = document.querySelector("#recording-chip");
+const recordingAudio = document.querySelector("#recording-audio");
+const recordingDuration = document.querySelector("#recording-duration");
+const recordingRemoveButton = document.querySelector("#recording-remove-button");
+const chatModeButton = document.querySelector("#chat-mode-button");
+const chatModeLabel = document.querySelector("#chat-mode-label");
+const chatModeMenu = document.querySelector("#chat-mode-menu");
 const exportChatButton = document.querySelector("#export-chat-button");
 const clearChatButton = document.querySelector("#clear-chat-button");
 const viewTitle = document.querySelector("#view-title");
@@ -1398,64 +1406,201 @@ chatAttachInput.addEventListener("change", async () => {
 
 attachmentRemoveButton.addEventListener("click", () => setAttachmentChip(null));
 
-const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-let speechRecognizer = null;
-let isRecording = false;
+// ---- Chat mode selector (Build / Discover / Discuss) ----
+let chatMode = "build";
+const chatModeCopy = {
+  build: { label: "Build", instruction: "" },
+  discover: {
+    label: "Discover",
+    instruction: "Mode: Discover. Prioritize surfacing new information, relevant sources, and broader context on the topic before giving a direct answer.",
+  },
+  discuss: {
+    label: "Discuss",
+    instruction: "Mode: Discuss. Keep the response conversational, ask a clarifying follow-up question where useful, and avoid long lists unless asked.",
+  },
+};
 
-function toggleVoiceInput() {
-  if (!SpeechRecognitionClass) {
-    addMessage("system", "Voice input isn't supported in this browser. Try Chrome, Edge, or Safari on desktop.");
-    return;
-  }
-  if (isRecording) {
-    speechRecognizer?.stop();
-    return;
-  }
-  speechRecognizer = new SpeechRecognitionClass();
-  speechRecognizer.lang = "en-US";
-  speechRecognizer.interimResults = false;
-  speechRecognizer.maxAlternatives = 1;
-  speechRecognizer.onstart = () => {
-    isRecording = true;
-    chatMicButton.classList.add("recording");
-    chatMicButton.setAttribute("aria-label", "Stop recording");
-  };
-  speechRecognizer.onresult = (event) => {
-    const transcript = Array.from(event.results).map((result) => result[0].transcript).join(" ").trim();
-    if (transcript) {
-      chatInput.value = chatInput.value ? `${chatInput.value} ${transcript}` : transcript;
-      chatInput.focus();
-    }
-  };
-  speechRecognizer.onerror = (event) => {
-    if (event.error !== "no-speech" && event.error !== "aborted") {
-      addMessage("system", `Voice input error: ${event.error}`);
-    }
-  };
-  speechRecognizer.onend = () => {
-    isRecording = false;
-    chatMicButton.classList.remove("recording");
-    chatMicButton.setAttribute("aria-label", "Use microphone");
-  };
-  speechRecognizer.start();
+function setChatMode(mode) {
+  chatMode = chatModeCopy[mode] ? mode : "build";
+  chatModeLabel.textContent = chatModeCopy[chatMode].label;
+  chatModeMenu.querySelectorAll("button[data-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === chatMode);
+  });
 }
 
-chatMicButton.addEventListener("click", toggleVoiceInput);
+function closeChatModeMenu() {
+  chatModeMenu.hidden = true;
+  chatModeButton.setAttribute("aria-expanded", "false");
+}
+
+chatModeButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const willOpen = chatModeMenu.hidden;
+  chatModeMenu.hidden = !willOpen;
+  chatModeButton.setAttribute("aria-expanded", String(willOpen));
+});
+
+chatModeMenu.querySelectorAll("button[data-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setChatMode(button.dataset.mode);
+    closeChatModeMenu();
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (!chatModeMenu.hidden && !event.target.closest(".chat-mode")) closeChatModeMenu();
+});
+
+setChatMode("build");
+
+// ---- Real microphone recording (actual audio capture, with live transcript) ----
+const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+let speechRecognizer = null;
+let mediaRecorder = null;
+let mediaStream = null;
+let recordedChunks = [];
+let recordingStartedAt = null;
+let recordingTimerId = null;
+let isRecording = false;
+let pendingRecording = null; // { blob, url, durationSeconds }
+
+function formatDuration(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function updateMicTimer() {
+  const elapsed = Math.floor((Date.now() - recordingStartedAt) / 1000);
+  chatMicTimer.textContent = formatDuration(elapsed);
+}
+
+function setRecordingChip(recording) {
+  pendingRecording?.url && URL.revokeObjectURL(pendingRecording.url);
+  pendingRecording = recording;
+  if (recording) {
+    recordingAudio.src = recording.url;
+    recordingDuration.textContent = formatDuration(recording.durationSeconds);
+    recordingChip.hidden = false;
+  } else {
+    recordingAudio.pause();
+    recordingAudio.removeAttribute("src");
+    recordingChip.hidden = true;
+  }
+}
+
+recordingRemoveButton.addEventListener("click", () => setRecordingChip(null));
+
+async function startRecording() {
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    addMessage("system", "This browser doesn't support microphone recording. Try Chrome, Edge, or Safari on desktop.");
+    return;
+  }
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (error) {
+    addMessage("system", `Microphone access failed: ${error.message}`);
+    return;
+  }
+
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(mediaStream);
+  mediaRecorder.addEventListener("dataavailable", (event) => {
+    if (event.data.size > 0) recordedChunks.push(event.data);
+  });
+  mediaRecorder.addEventListener("stop", () => {
+    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+    const durationSeconds = Math.max(1, Math.round((Date.now() - recordingStartedAt) / 1000));
+    setRecordingChip({ blob, url: URL.createObjectURL(blob), durationSeconds });
+    mediaStream?.getTracks().forEach((track) => track.stop());
+    mediaStream = null;
+  });
+
+  mediaRecorder.start();
+  recordingStartedAt = Date.now();
+  isRecording = true;
+  chatMicButton.classList.add("recording");
+  chatMicButton.setAttribute("aria-label", "Stop recording");
+  chatMicTimer.hidden = false;
+  chatMicTimer.textContent = "0:00";
+  recordingTimerId = window.setInterval(updateMicTimer, 500);
+
+  if (SpeechRecognitionClass) {
+    speechRecognizer = new SpeechRecognitionClass();
+    speechRecognizer.lang = "en-US";
+    speechRecognizer.interimResults = false;
+    speechRecognizer.continuous = true;
+    speechRecognizer.maxAlternatives = 1;
+    speechRecognizer.addEventListener("result", (event) => {
+      const transcript = Array.from(event.results).map((result) => result[0].transcript).join(" ").trim();
+      if (transcript) chatInput.value = transcript;
+    });
+    speechRecognizer.addEventListener("error", (event) => {
+      if (event.error !== "no-speech" && event.error !== "aborted") {
+        addMessage("system", `Voice transcription error: ${event.error}`);
+      }
+    });
+    try {
+      speechRecognizer.start();
+    } catch {
+      // Some browsers throw if recognition is already running; safe to ignore.
+    }
+  }
+}
+
+function stopRecording() {
+  mediaRecorder?.state === "recording" && mediaRecorder.stop();
+  speechRecognizer?.stop();
+  isRecording = false;
+  chatMicButton.classList.remove("recording");
+  chatMicButton.setAttribute("aria-label", "Record a voice message");
+  chatMicTimer.hidden = true;
+  window.clearInterval(recordingTimerId);
+  recordingTimerId = null;
+}
+
+chatMicButton.addEventListener("click", () => {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (isRecording) {
+    addMessage("system", "Stop the recording before sending your message.");
+    return;
+  }
   const prompt = chatInput.value.trim();
-  if (!prompt) return;
   const attachment = pendingAttachment;
-  const displayText = attachment ? `${prompt}\n\n📎 ${attachment.name}` : prompt;
-  const sendText = attachment
-    ? `Attached file "${attachment.name}":\n"""\n${attachment.content}\n"""\n\n${prompt}`
-    : prompt;
-  addMessage("user", displayText);
+  const recording = pendingRecording;
+  if (!prompt && !attachment && !recording) return;
+
+  const modeInstruction = chatModeCopy[chatMode]?.instruction;
+  const displayPrompt = prompt || "(voice message)";
+  const displayText = attachment ? `${displayPrompt}\n\n📎 ${attachment.name}` : displayPrompt;
+  const sendTextParts = [];
+  if (modeInstruction) sendTextParts.push(modeInstruction);
+  if (attachment) sendTextParts.push(`Attached file "${attachment.name}":\n"""\n${attachment.content}\n"""`);
+  sendTextParts.push(displayPrompt);
+  const sendText = sendTextParts.join("\n\n");
+
+  const userMessageEl = addMessage("user", displayText);
+  if (recording) {
+    const audioEl = document.createElement("audio");
+    audioEl.controls = true;
+    audioEl.src = recording.url;
+    audioEl.className = "message-audio";
+    userMessageEl.querySelector(".message-bubble")?.prepend(audioEl);
+  }
   await recordChatMessage("user", displayText);
   chatInput.value = "";
   chatInput.disabled = true;
   setAttachmentChip(null);
+  pendingRecording = null;
+  recordingChip.hidden = true;
   setLoadingButton(chatSendButton, true, "Thinking");
   const thinkingMessage = addMessage("ai", "Thinking through backend...");
 
@@ -1464,7 +1609,7 @@ chatForm.addEventListener("submit", async (event) => {
     updateMessageText(thinkingMessage, reply);
     await recordChatMessage("ai", reply);
   } catch (error) {
-    const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(prompt)}`;
+    const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(displayPrompt)}`;
     updateMessageText(thinkingMessage, fallback);
     await recordChatMessage("ai", fallback);
   } finally {
