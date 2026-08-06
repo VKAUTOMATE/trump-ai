@@ -836,6 +836,30 @@ button:disabled {
   text-decoration: underline;
 }
 
+.message-text a.citation-pill {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--primary-dark);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.message-text a.citation-pill:hover {
+  background: rgba(204, 14, 28, 0.1);
+  color: var(--primary);
+}
+
+.message.user .message-text a.citation-pill {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
 .message.user .message-text a {
   color: #fff;
 }

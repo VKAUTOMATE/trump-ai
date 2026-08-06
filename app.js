@@ -299,10 +299,14 @@ function formatMessageHtml(rawText) {
   const inline = (text) => text
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, "<em>$1</em>")
-    .replace(/(https?:\/\/[^\s)<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    .replace(/(\()?(https?:\/\/[^\s)<]+)(\))?/g, (match, openParen, url, closeParen) =>
+      `${openParen || ""}${renderCitationPill(url)}${closeParen || ""}`
+    );
 
   lines.forEach((line) => {
     const trimmed = line.trim();
+    if (!trimmed) return; // skip blank lines without flushing, so lists spanning blank lines stay one list
+
     const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
     const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
     const numberedMatch = trimmed.match(/^\d+[.)]\s+(.*)$/);
@@ -325,11 +329,21 @@ function formatMessageHtml(rawText) {
       listBuffer.push(inline(numberedMatch[1]));
     } else {
       flushList();
-      if (trimmed) htmlParts.push(`<p>${inline(trimmed)}</p>`);
+      htmlParts.push(`<p>${inline(trimmed)}</p>`);
     }
   });
   flushList();
   return htmlParts.join("") || `<p>${inline(escaped)}</p>`;
+}
+
+function renderCitationPill(url) {
+  let label = "Source";
+  try {
+    label = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    // keep fallback label
+  }
+  return `<a class="citation-pill" href="${url}" target="_blank" rel="noopener noreferrer">${label} &#8599;</a>`;
 }
 
 function splitList(value) {
