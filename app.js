@@ -89,6 +89,13 @@ const defaultSettings = {
 const chatLog = document.querySelector("#chat-log");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
+const chatSendButton = document.querySelector("#chat-send-button");
+const chatAttachButton = document.querySelector("#chat-attach-button");
+const chatAttachInput = document.querySelector("#chat-attach-input");
+const chatMicButton = document.querySelector("#chat-mic-button");
+const attachmentChip = document.querySelector("#attachment-chip");
+const attachmentChipName = document.querySelector("#attachment-chip-name");
+const attachmentRemoveButton = document.querySelector("#attachment-remove-button");
 const exportChatButton = document.querySelector("#export-chat-button");
 const clearChatButton = document.querySelector("#clear-chat-button");
 const viewTitle = document.querySelector("#view-title");
@@ -1358,20 +1365,102 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
   });
 });
 
+let pendingAttachment = null; // { name, content }
+const MAX_ATTACHMENT_CHARS = 20000;
+
+function setAttachmentChip(file) {
+  pendingAttachment = file;
+  if (file) {
+    attachmentChipName.textContent = file.name;
+    attachmentChip.hidden = false;
+  } else {
+    attachmentChip.hidden = true;
+    attachmentChipName.textContent = "";
+  }
+}
+
+chatAttachButton.addEventListener("click", () => chatAttachInput.click());
+
+chatAttachInput.addEventListener("change", async () => {
+  const file = chatAttachInput.files?.[0];
+  chatAttachInput.value = "";
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const trimmed = text.length > MAX_ATTACHMENT_CHARS
+      ? `${text.slice(0, MAX_ATTACHMENT_CHARS)}\n\n[truncated: file is longer than ${MAX_ATTACHMENT_CHARS} characters]`
+      : text;
+    setAttachmentChip({ name: file.name, content: trimmed });
+  } catch (error) {
+    addMessage("system", `Could not read ${file.name}: ${error.message}`);
+  }
+});
+
+attachmentRemoveButton.addEventListener("click", () => setAttachmentChip(null));
+
+const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+let speechRecognizer = null;
+let isRecording = false;
+
+function toggleVoiceInput() {
+  if (!SpeechRecognitionClass) {
+    addMessage("system", "Voice input isn't supported in this browser. Try Chrome, Edge, or Safari on desktop.");
+    return;
+  }
+  if (isRecording) {
+    speechRecognizer?.stop();
+    return;
+  }
+  speechRecognizer = new SpeechRecognitionClass();
+  speechRecognizer.lang = "en-US";
+  speechRecognizer.interimResults = false;
+  speechRecognizer.maxAlternatives = 1;
+  speechRecognizer.onstart = () => {
+    isRecording = true;
+    chatMicButton.classList.add("recording");
+    chatMicButton.setAttribute("aria-label", "Stop recording");
+  };
+  speechRecognizer.onresult = (event) => {
+    const transcript = Array.from(event.results).map((result) => result[0].transcript).join(" ").trim();
+    if (transcript) {
+      chatInput.value = chatInput.value ? `${chatInput.value} ${transcript}` : transcript;
+      chatInput.focus();
+    }
+  };
+  speechRecognizer.onerror = (event) => {
+    if (event.error !== "no-speech" && event.error !== "aborted") {
+      addMessage("system", `Voice input error: ${event.error}`);
+    }
+  };
+  speechRecognizer.onend = () => {
+    isRecording = false;
+    chatMicButton.classList.remove("recording");
+    chatMicButton.setAttribute("aria-label", "Use microphone");
+  };
+  speechRecognizer.start();
+}
+
+chatMicButton.addEventListener("click", toggleVoiceInput);
+
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const prompt = chatInput.value.trim();
   if (!prompt) return;
-  addMessage("user", prompt);
-  await recordChatMessage("user", prompt);
+  const attachment = pendingAttachment;
+  const displayText = attachment ? `${prompt}\n\n📎 ${attachment.name}` : prompt;
+  const sendText = attachment
+    ? `Attached file "${attachment.name}":\n"""\n${attachment.content}\n"""\n\n${prompt}`
+    : prompt;
+  addMessage("user", displayText);
+  await recordChatMessage("user", displayText);
   chatInput.value = "";
   chatInput.disabled = true;
-  const sendButton = chatForm.querySelector("button");
-  setLoadingButton(sendButton, true, "Thinking");
+  setAttachmentChip(null);
+  setLoadingButton(chatSendButton, true, "Thinking");
   const thinkingMessage = addMessage("ai", "Thinking through backend...");
 
   try {
-    const reply = await askOpenAI(prompt);
+    const reply = await askOpenAI(sendText);
     updateMessageText(thinkingMessage, reply);
     await recordChatMessage("ai", reply);
   } catch (error) {
@@ -1380,7 +1469,7 @@ chatForm.addEventListener("submit", async (event) => {
     await recordChatMessage("ai", fallback);
   } finally {
     chatInput.disabled = false;
-    setLoadingButton(sendButton, false);
+    setLoadingButton(chatSendButton, false);
     chatInput.focus();
   }
 });

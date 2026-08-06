@@ -116,9 +116,17 @@
                 </div>
               </div>
               <div id="chat-log" class="chat-log" aria-live="polite"></div>
+              <div id="attachment-chip" class="attachment-chip" hidden>
+                <span class="attachment-chip-icon" aria-hidden="true">&#128206;</span>
+                <span id="attachment-chip-name"></span>
+                <button type="button" id="attachment-remove-button" aria-label="Remove attachment">&times;</button>
+              </div>
               <form id="chat-form" class="chat-form">
+                <input type="file" id="chat-attach-input" accept=".txt,.md,.csv,.json,.log" hidden />
+                <button type="button" id="chat-attach-button" class="icon-button" title="Attach a text file" aria-label="Attach a file">+</button>
                 <input id="chat-input" type="text" autocomplete="off" placeholder="Ask any question..." />
-                <button type="submit"><span class="button-icon">&#10148;</span>Send</button>
+                <button type="button" id="chat-mic-button" class="icon-button" title="Voice input" aria-label="Use microphone">&#127908;</button>
+                <button type="submit" id="chat-send-button"><span class="button-icon">&#10148;</span>Send</button>
               </form>
             </section>
 
