@@ -978,7 +978,6 @@ async function loadLiveData(topic, button) {
   try {
     const items = await loaders[topic]();
     renderLiveCards(topic, items);
-    addMessage("system", `Loaded ${items.length} live ${topic} item${items.length === 1 ? "" : "s"}. I can now use that context in chat.`);
   } catch (error) {
     renderLiveError(topic, error);
     addMessage("system", `I could not load live ${topic} data: ${error.message}`);
