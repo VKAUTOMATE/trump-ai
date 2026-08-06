@@ -93,7 +93,6 @@ const chatSendButton = document.querySelector("#chat-send-button");
 const chatAttachButton = document.querySelector("#chat-attach-button");
 const chatAttachInput = document.querySelector("#chat-attach-input");
 const chatMicButton = document.querySelector("#chat-mic-button");
-const chatMicTimer = document.querySelector("#chat-mic-timer");
 const attachmentChip = document.querySelector("#attachment-chip");
 const attachmentChipName = document.querySelector("#attachment-chip-name");
 const attachmentRemoveButton = document.querySelector("#attachment-remove-button");
@@ -1460,19 +1459,15 @@ let mediaRecorder = null;
 let mediaStream = null;
 let recordedChunks = [];
 let recordingStartedAt = null;
-let recordingTimerId = null;
 let isRecording = false;
+let isStartingRecording = false;
+let releaseRequestedDuringStart = false;
 let pendingRecording = null; // { blob, url, durationSeconds }
 
 function formatDuration(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-function updateMicTimer() {
-  const elapsed = Math.floor((Date.now() - recordingStartedAt) / 1000);
-  chatMicTimer.textContent = formatDuration(elapsed);
 }
 
 function setRecordingChip(recording) {
@@ -1520,10 +1515,7 @@ async function startRecording() {
   recordingStartedAt = Date.now();
   isRecording = true;
   chatMicButton.classList.add("recording");
-  chatMicButton.setAttribute("aria-label", "Stop recording");
-  chatMicTimer.hidden = false;
-  chatMicTimer.textContent = "0:00";
-  recordingTimerId = window.setInterval(updateMicTimer, 500);
+  chatMicButton.setAttribute("aria-label", "Recording — release to stop");
 
   if (SpeechRecognitionClass) {
     speechRecognizer = new SpeechRecognitionClass();
@@ -1553,19 +1545,33 @@ function stopRecording() {
   speechRecognizer?.stop();
   isRecording = false;
   chatMicButton.classList.remove("recording");
-  chatMicButton.setAttribute("aria-label", "Record a voice message");
-  chatMicTimer.hidden = true;
-  window.clearInterval(recordingTimerId);
-  recordingTimerId = null;
+  chatMicButton.setAttribute("aria-label", "Press and hold to talk");
 }
 
-chatMicButton.addEventListener("click", () => {
-  if (isRecording) {
-    stopRecording();
-  } else {
-    startRecording();
+async function beginPressRecording() {
+  if (isRecording || isStartingRecording) return;
+  isStartingRecording = true;
+  releaseRequestedDuringStart = false;
+  await startRecording();
+  isStartingRecording = false;
+  if (releaseRequestedDuringStart && isRecording) stopRecording();
+}
+
+function endPressRecording() {
+  if (isStartingRecording) {
+    releaseRequestedDuringStart = true;
+    return;
   }
+  if (isRecording) stopRecording();
+}
+
+chatMicButton.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  beginPressRecording();
 });
+chatMicButton.addEventListener("pointerup", endPressRecording);
+chatMicButton.addEventListener("pointerleave", endPressRecording);
+chatMicButton.addEventListener("pointercancel", endPressRecording);
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();

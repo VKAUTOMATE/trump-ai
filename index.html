@@ -130,7 +130,7 @@
               <form id="chat-form" class="chat-form">
                 <input type="file" id="chat-attach-input" accept=".txt,.md,.csv,.json,.log" hidden />
                 <div class="chat-input-shell">
-                  <button type="button" id="chat-attach-button" class="pill-icon-button" title="Attach a text file" aria-label="Attach a file">+</button>
+                  <button type="button" id="chat-attach-button" class="pill-icon-button" data-tooltip="Add files, images, links, and more" aria-label="Add files, images, links, and more">+</button>
                   <input id="chat-input" type="text" autocomplete="off" placeholder="Ask any question..." />
                   <div class="chat-mode">
                     <button type="button" id="chat-mode-button" class="pill-mode-button" aria-haspopup="true" aria-expanded="false">
@@ -143,9 +143,8 @@
                       <button type="button" data-mode="discuss" role="menuitem">Discuss</button>
                     </div>
                   </div>
-                  <button type="button" id="chat-mic-button" class="pill-icon-button" title="Record a voice message" aria-label="Record a voice message">
+                  <button type="button" id="chat-mic-button" class="pill-icon-button" data-tooltip="Press and hold to talk" aria-label="Press and hold to talk">
                     <span id="chat-mic-icon">&#127908;</span>
-                    <span id="chat-mic-timer" class="mic-timer" hidden>0:00</span>
                   </button>
                   <button type="submit" id="chat-send-button" class="pill-icon-button pill-send-button" aria-label="Send message">&#10148;</button>
                 </div>
