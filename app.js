@@ -434,6 +434,22 @@ function renderLandingCards() {
   });
 }
 
+function renderMathIn(el) {
+  if (!el || typeof window.renderMathInElement !== "function") return;
+  try {
+    window.renderMathInElement(el, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false },
+      ],
+      throwOnError: false,
+    });
+  } catch {
+    // KaTeX failed to parse; leave the raw text as-is.
+  }
+}
+
 function addMessage(role, text) {
   const message = document.createElement("div");
   message.className = `message ${role}`;
@@ -445,6 +461,7 @@ function addMessage(role, text) {
     textNode.className = "message-text";
     textNode.dataset.rawText = text;
     textNode.innerHTML = formatMessageHtml(text);
+    renderMathIn(textNode);
     bubble.append(textNode);
     message.append(bubble);
     chatLog.classList.remove("empty");
@@ -463,6 +480,7 @@ function addMessage(role, text) {
   textNode.className = "message-text";
   textNode.dataset.rawText = text;
   textNode.innerHTML = formatMessageHtml(text);
+  renderMathIn(textNode);
   const actions = document.createElement("div");
   actions.className = "message-actions";
   const likeButton = createMessageAction("Like", "&#128077;");
@@ -492,6 +510,7 @@ function updateMessageText(messageEl, text) {
   if (!textNode) return;
   textNode.dataset.rawText = text;
   textNode.innerHTML = formatMessageHtml(text);
+  renderMathIn(textNode);
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
