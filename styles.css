@@ -1014,6 +1014,12 @@ button:disabled {
   color: #fff;
 }
 
+#chat-mic-button {
+  height: 44px;
+  min-height: 44px;
+  width: 44px;
+}
+
 #chat-mic-button.recording {
   animation: mic-pulse 1.1s ease-in-out infinite;
   background: var(--primary);
