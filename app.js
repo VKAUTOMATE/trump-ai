@@ -94,6 +94,8 @@ const chatAttachButton = document.querySelector("#chat-attach-button");
 const chatAttachInput = document.querySelector("#chat-attach-input");
 const chatMicButton = document.querySelector("#chat-mic-button");
 const attachmentChip = document.querySelector("#attachment-chip");
+const attachmentChipIcon = document.querySelector("#attachment-chip-icon");
+const attachmentChipThumb = document.querySelector("#attachment-chip-thumb");
 const attachmentChipName = document.querySelector("#attachment-chip-name");
 const attachmentRemoveButton = document.querySelector("#attachment-remove-button");
 const recordingChip = document.querySelector("#recording-chip");
@@ -736,7 +738,7 @@ function extractResponseText(data) {
   return chunks.join("\n").trim();
 }
 
-async function askOpenAI(prompt) {
+async function askOpenAI(prompt, imageDataUrl) {
   const recentHistory = conversationHistory.slice(-8).map((entry) => ({
     role: entry.role === "ai" ? "assistant" : "user",
     content: [{ type: "input_text", text: entry.text }],
@@ -746,6 +748,7 @@ async function askOpenAI(prompt) {
     method: "POST",
     body: JSON.stringify({
       prompt,
+      imageDataUrl: imageDataUrl || undefined,
       history: recentHistory,
       systemPrompt: buildSystemPrompt(prompt),
       modelName: settings.modelName || defaultSettings.modelName,
@@ -1372,17 +1375,30 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
   });
 });
 
-let pendingAttachment = null; // { name, content }
+let pendingAttachment = null; // { type: "text", name, content } or { type: "image", name, dataUrl }
 const MAX_ATTACHMENT_CHARS = 20000;
+const MAX_IMAGE_BYTES = 3_000_000; // ~3MB raw, keeps base64 payload under the backend's limit
 
-function setAttachmentChip(file) {
-  pendingAttachment = file;
-  if (file) {
-    attachmentChipName.textContent = file.name;
+function setAttachmentChip(attachment) {
+  pendingAttachment = attachment;
+  if (attachment) {
+    attachmentChipName.textContent = attachment.name;
+    if (attachment.type === "image") {
+      attachmentChipThumb.src = attachment.dataUrl;
+      attachmentChipThumb.hidden = false;
+      attachmentChipIcon.hidden = true;
+    } else {
+      attachmentChipThumb.hidden = true;
+      attachmentChipThumb.removeAttribute("src");
+      attachmentChipIcon.hidden = false;
+    }
     attachmentChip.hidden = false;
   } else {
     attachmentChip.hidden = true;
     attachmentChipName.textContent = "";
+    attachmentChipThumb.hidden = true;
+    attachmentChipThumb.removeAttribute("src");
+    attachmentChipIcon.hidden = false;
   }
 }
 
@@ -1392,16 +1408,37 @@ chatAttachInput.addEventListener("change", async () => {
   const file = chatAttachInput.files?.[0];
   chatAttachInput.value = "";
   if (!file) return;
+
+  if (file.type.startsWith("image/")) {
+    if (file.size > MAX_IMAGE_BYTES) {
+      addMessage("system", `${file.name} is too large. Please use an image under ${Math.round(MAX_IMAGE_BYTES / 1_000_000)}MB.`);
+      return;
+    }
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("Could not read image"));
+        reader.readAsDataURL(file);
+      });
+      setAttachmentChip({ type: "image", name: file.name, dataUrl });
+    } catch (error) {
+      addMessage("system", `Could not read ${file.name}: ${error.message}`);
+    }
+    return;
+  }
+
   try {
     const text = await file.text();
     const trimmed = text.length > MAX_ATTACHMENT_CHARS
       ? `${text.slice(0, MAX_ATTACHMENT_CHARS)}\n\n[truncated: file is longer than ${MAX_ATTACHMENT_CHARS} characters]`
       : text;
-    setAttachmentChip({ name: file.name, content: trimmed });
+    setAttachmentChip({ type: "text", name: file.name, content: trimmed });
   } catch (error) {
     addMessage("system", `Could not read ${file.name}: ${error.message}`);
   }
 });
+
 
 attachmentRemoveButton.addEventListener("click", () => setAttachmentChip(null));
 
@@ -1470,11 +1507,31 @@ function formatDuration(totalSeconds) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+// Chrome/Edge give WebM blobs recorded via MediaRecorder a duration of Infinity
+// until the audio element is forced to seek once. This is the standard workaround.
+function attachAudioDurationFix(audioEl) {
+  audioEl.addEventListener(
+    "loadedmetadata",
+    () => {
+      if (audioEl.duration === Infinity || Number.isNaN(audioEl.duration)) {
+        audioEl.currentTime = 1e101;
+        const resetTime = () => {
+          audioEl.currentTime = 0;
+          audioEl.removeEventListener("timeupdate", resetTime);
+        };
+        audioEl.addEventListener("timeupdate", resetTime);
+      }
+    },
+    { once: true }
+  );
+}
+
 function setRecordingChip(recording) {
   pendingRecording?.url && URL.revokeObjectURL(pendingRecording.url);
   pendingRecording = recording;
   if (recording) {
     recordingAudio.src = recording.url;
+    attachAudioDurationFix(recordingAudio);
     recordingDuration.textContent = formatDuration(recording.durationSeconds);
     recordingChip.hidden = false;
   } else {
@@ -1516,6 +1573,7 @@ async function startRecording() {
   isRecording = true;
   chatMicButton.classList.add("recording");
   chatMicButton.setAttribute("aria-label", "Recording — release to stop");
+  chatMicButton.setAttribute("data-tooltip", "Recording — release to stop");
 
   if (SpeechRecognitionClass) {
     speechRecognizer = new SpeechRecognitionClass();
@@ -1546,6 +1604,7 @@ function stopRecording() {
   isRecording = false;
   chatMicButton.classList.remove("recording");
   chatMicButton.setAttribute("aria-label", "Press and hold to talk");
+  chatMicButton.setAttribute("data-tooltip", "Press and hold to talk");
 }
 
 async function beginPressRecording() {
@@ -1585,20 +1644,29 @@ chatForm.addEventListener("submit", async (event) => {
   if (!prompt && !attachment && !recording) return;
 
   const modeInstruction = chatModeCopy[chatMode]?.instruction;
-  const displayPrompt = prompt || "(voice message)";
+  const displayPrompt = prompt || (attachment?.type === "image" ? "(image)" : "(voice message)");
   const displayText = attachment ? `${displayPrompt}\n\n📎 ${attachment.name}` : displayPrompt;
   const sendTextParts = [];
   if (modeInstruction) sendTextParts.push(modeInstruction);
-  if (attachment) sendTextParts.push(`Attached file "${attachment.name}":\n"""\n${attachment.content}\n"""`);
+  if (attachment?.type === "text") sendTextParts.push(`Attached file "${attachment.name}":\n"""\n${attachment.content}\n"""`);
   sendTextParts.push(displayPrompt);
   const sendText = sendTextParts.join("\n\n");
+  const imageDataUrl = attachment?.type === "image" ? attachment.dataUrl : null;
 
   const userMessageEl = addMessage("user", displayText);
+  if (imageDataUrl) {
+    const imgEl = document.createElement("img");
+    imgEl.src = imageDataUrl;
+    imgEl.alt = attachment.name;
+    imgEl.className = "message-image";
+    userMessageEl.querySelector(".message-bubble")?.prepend(imgEl);
+  }
   if (recording) {
     const audioEl = document.createElement("audio");
     audioEl.controls = true;
     audioEl.src = recording.url;
     audioEl.className = "message-audio";
+    attachAudioDurationFix(audioEl);
     userMessageEl.querySelector(".message-bubble")?.prepend(audioEl);
   }
   await recordChatMessage("user", displayText);
@@ -1611,7 +1679,7 @@ chatForm.addEventListener("submit", async (event) => {
   const thinkingMessage = addMessage("ai", "Thinking through backend...");
 
   try {
-    const reply = await askOpenAI(sendText);
+    const reply = await askOpenAI(sendText, imageDataUrl);
     updateMessageText(thinkingMessage, reply);
     await recordChatMessage("ai", reply);
   } catch (error) {

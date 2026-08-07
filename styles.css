@@ -765,6 +765,14 @@ button:disabled {
   width: 100%;
 }
 
+.message-image {
+  border-radius: 10px;
+  display: block;
+  max-height: 260px;
+  max-width: 100%;
+  object-fit: cover;
+}
+
 .message-text {
   margin: 0;
   overflow-wrap: anywhere;
@@ -928,6 +936,13 @@ button:disabled {
 
 .attachment-chip-icon {
   font-size: 14px;
+}
+
+.attachment-chip-thumb {
+  border-radius: 6px;
+  height: 28px;
+  object-fit: cover;
+  width: 28px;
 }
 
 #attachment-chip-name {
