@@ -781,43 +781,72 @@ button:disabled {
   height: 100%;
   justify-content: center;
   left: 0;
-  padding: 40px;
+  padding: 24px;
   position: fixed;
   top: 0;
   width: 100%;
   z-index: 1000;
 }
 
-.image-lightbox img {
-  border-radius: 8px;
+.image-lightbox-inner {
+  display: inline-flex;
   max-height: 100%;
   max-width: 100%;
+  position: relative;
+}
+
+.image-lightbox-inner img {
+  border-radius: 8px;
+  display: block;
+  max-height: calc(100vh - 48px);
+  max-width: calc(100vw - 48px);
   object-fit: contain;
 }
 
 .image-lightbox-close {
   align-items: center;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: #fff;
+  border: 1px solid var(--line);
   border-radius: 50%;
-  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: var(--text);
   cursor: pointer;
   display: inline-flex;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
-  height: 40px;
+  height: 32px;
   justify-content: center;
   line-height: 1;
   min-height: auto;
   padding: 0;
-  position: fixed;
-  right: 20px;
-  top: 20px;
-  width: 40px;
+  position: absolute;
+  right: -12px;
+  top: -12px;
+  width: 32px;
 }
 
 .image-lightbox-close:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+@media (max-width: 560px) {
+  .image-lightbox {
+    padding: 20px;
+  }
+
+  .image-lightbox-inner img {
+    max-height: calc(100vh - 60px);
+    max-width: calc(100vw - 60px);
+  }
+
+  .image-lightbox-close {
+    height: 30px;
+    right: -8px;
+    top: -8px;
+    width: 30px;
+  }
 }
 
 .message-text {
