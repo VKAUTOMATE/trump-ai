@@ -289,21 +289,40 @@ async function saveSettings() {
   }
 }
 
+const MAX_STORED_IMAGES = 12; // keep recent images only, to avoid unbounded IndexedDB growth
+
 function sanitizeChatHistory(value) {
   if (!Array.isArray(value)) return [];
-  return value
+  const sanitized = value
     .filter((entry) => ["user", "ai"].includes(entry?.role) && typeof entry.text === "string" && entry.text.trim())
     .slice(-200)
     .map((entry) => ({
       role: entry.role,
       text: entry.text,
       timestamp: entry.timestamp || "",
+      ...(typeof entry.imageDataUrl === "string" && entry.imageDataUrl.startsWith("data:") ? { imageDataUrl: entry.imageDataUrl } : {}),
     }));
+
+  let imagesSeen = 0;
+  for (let i = sanitized.length - 1; i >= 0; i -= 1) {
+    if (sanitized[i].imageDataUrl) {
+      imagesSeen += 1;
+      if (imagesSeen > MAX_STORED_IMAGES) delete sanitized[i].imageDataUrl;
+    }
+  }
+  return sanitized;
 }
 
 async function saveChatHistory() {
   conversationHistory = sanitizeChatHistory(conversationHistory);
-  localStorage.setItem("trump-ai-chat-history", JSON.stringify(conversationHistory));
+  try {
+    localStorage.setItem(
+      "trump-ai-chat-history",
+      JSON.stringify(conversationHistory.map(({ imageDataUrl, ...rest }) => rest))
+    );
+  } catch (error) {
+    console.warn("Chat history text backup to localStorage failed:", error);
+  }
   try {
     await dbSet("chatHistory", conversationHistory);
   } catch (error) {
@@ -618,11 +637,25 @@ function renderChatHistory() {
     return;
   }
   chatLog.classList.remove("empty");
-  conversationHistory.forEach((entry) => addMessage(entry.role, entry.text));
+  conversationHistory.forEach((entry) => {
+    const messageEl = addMessage(entry.role, entry.text);
+    if (entry.imageDataUrl) {
+      const imgEl = document.createElement("img");
+      imgEl.src = entry.imageDataUrl;
+      imgEl.alt = "";
+      imgEl.className = "message-image";
+      messageEl.querySelector(".message-bubble")?.prepend(imgEl);
+    }
+  });
 }
 
-async function recordChatMessage(role, text) {
-  conversationHistory.push({ role, text, timestamp: new Date().toISOString() });
+async function recordChatMessage(role, text, imageDataUrl) {
+  conversationHistory.push({
+    role,
+    text,
+    timestamp: new Date().toISOString(),
+    ...(imageDataUrl ? { imageDataUrl } : {}),
+  });
   await saveChatHistory();
 }
 
@@ -1701,7 +1734,7 @@ chatForm.addEventListener("submit", async (event) => {
     attachAudioDurationFix(audioEl);
     userMessageEl.querySelector(".message-bubble")?.prepend(audioEl);
   }
-  await recordChatMessage("user", displayText);
+  await recordChatMessage("user", displayText, imageDataUrl);
   chatInput.value = "";
   chatInput.disabled = true;
   setAttachmentChip(null);
