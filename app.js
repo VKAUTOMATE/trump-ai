@@ -105,6 +105,9 @@ const recordingRemoveButton = document.querySelector("#recording-remove-button")
 const chatModeButton = document.querySelector("#chat-mode-button");
 const chatModeLabel = document.querySelector("#chat-mode-label");
 const chatModeMenu = document.querySelector("#chat-mode-menu");
+const imageLightbox = document.querySelector("#image-lightbox");
+const imageLightboxImg = document.querySelector("#image-lightbox-img");
+const imageLightboxClose = document.querySelector("#image-lightbox-close");
 const exportChatButton = document.querySelector("#export-chat-button");
 const clearChatButton = document.querySelector("#clear-chat-button");
 const viewTitle = document.querySelector("#view-title");
@@ -120,6 +123,30 @@ let tasks = [];
 let settings = { ...defaultSettings };
 let conversationHistory = [];
 let backendStatus = { checked: false, ok: false, aiConfigured: false };
+
+function openImageLightbox(src, alt) {
+  imageLightboxImg.src = src;
+  imageLightboxImg.alt = alt || "";
+  imageLightbox.hidden = false;
+}
+
+function closeImageLightbox() {
+  imageLightbox.hidden = true;
+  imageLightboxImg.src = "";
+}
+
+chatLog.addEventListener("click", (event) => {
+  const image = event.target.closest(".message-image");
+  if (image) openImageLightbox(image.src, image.alt);
+});
+
+imageLightboxClose.addEventListener("click", closeImageLightbox);
+imageLightbox.addEventListener("click", (event) => {
+  if (event.target === imageLightbox) closeImageLightbox();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !imageLightbox.hidden) closeImageLightbox();
+});
 const liveData = {
   news: [],
   economics: [],
@@ -1646,9 +1673,14 @@ chatForm.addEventListener("submit", async (event) => {
   const modeInstruction = chatModeCopy[chatMode]?.instruction;
   const displayPrompt = prompt || (attachment?.type === "image" ? "(image)" : "(voice message)");
   const displayText = attachment ? `${displayPrompt}\n\n📎 ${attachment.name}` : displayPrompt;
+  const attachmentInstruction = attachment
+    ? attachment.type === "image"
+      ? "Analyze this image thoroughly: describe everything visible in detail (objects, text, people, setting, colors, composition), explain the context and what it likely represents, and point out anything notable or unusual. Go beyond a surface-level caption — give a deeper, complete explanation."
+      : `Analyze this attached file ("${attachment.name}") thoroughly: summarize its structure and content, explain what it contains in depth, and highlight anything important or unusual. Go beyond a surface-level summary.\n\nFile content:\n"""\n${attachment.content}\n"""`
+    : null;
   const sendTextParts = [];
   if (modeInstruction) sendTextParts.push(modeInstruction);
-  if (attachment?.type === "text") sendTextParts.push(`Attached file "${attachment.name}":\n"""\n${attachment.content}\n"""`);
+  if (attachmentInstruction) sendTextParts.push(attachmentInstruction);
   sendTextParts.push(displayPrompt);
   const sendText = sendTextParts.join("\n\n");
   const imageDataUrl = attachment?.type === "image" ? attachment.dataUrl : null;

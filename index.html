@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260731-formatting-fix" />
+    <link rel="stylesheet" href="styles.css?v=20260807-image-preview" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js"></script>
@@ -361,6 +361,11 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260731-formatting-fix"></script>
+    <div id="image-lightbox" class="image-lightbox" hidden>
+      <button type="button" id="image-lightbox-close" class="image-lightbox-close" aria-label="Close image">&times;</button>
+      <img id="image-lightbox-img" src="" alt="" />
+    </div>
+
+    <script src="app.js?v=20260807-image-preview"></script>
   </body>
 </html>
