@@ -1464,27 +1464,31 @@ function setAttachmentChip(attachment) {
 
 chatAttachButton.addEventListener("click", () => chatAttachInput.click());
 
+async function attachImageFile(file) {
+  if (file.size > MAX_IMAGE_BYTES) {
+    addMessage("system", `${file.name} is too large. Please use an image under ${Math.round(MAX_IMAGE_BYTES / 1_000_000)}MB.`);
+    return;
+  }
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error("Could not read image"));
+      reader.readAsDataURL(file);
+    });
+    setAttachmentChip({ type: "image", name: file.name || "pasted-image.png", dataUrl });
+  } catch (error) {
+    addMessage("system", `Could not read ${file.name || "that image"}: ${error.message}`);
+  }
+}
+
 chatAttachInput.addEventListener("change", async () => {
   const file = chatAttachInput.files?.[0];
   chatAttachInput.value = "";
   if (!file) return;
 
   if (file.type.startsWith("image/")) {
-    if (file.size > MAX_IMAGE_BYTES) {
-      addMessage("system", `${file.name} is too large. Please use an image under ${Math.round(MAX_IMAGE_BYTES / 1_000_000)}MB.`);
-      return;
-    }
-    try {
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error || new Error("Could not read image"));
-        reader.readAsDataURL(file);
-      });
-      setAttachmentChip({ type: "image", name: file.name, dataUrl });
-    } catch (error) {
-      addMessage("system", `Could not read ${file.name}: ${error.message}`);
-    }
+    await attachImageFile(file);
     return;
   }
 
@@ -1501,6 +1505,58 @@ chatAttachInput.addEventListener("change", async () => {
 
 
 attachmentRemoveButton.addEventListener("click", () => setAttachmentChip(null));
+
+// ---- Paste an image (from Google Images, a screenshot, another app, etc.) ----
+const IMAGE_URL_PATTERN = /^https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg|bmp)(?:\?\S*)?$/i;
+
+chatInput.addEventListener("paste", async (event) => {
+  const items = event.clipboardData?.items;
+  if (items) {
+    for (const item of items) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (file) await attachImageFile(file);
+        return;
+      }
+    }
+  }
+  const pastedText = event.clipboardData?.getData("text")?.trim();
+  if (pastedText && IMAGE_URL_PATTERN.test(pastedText)) {
+    event.preventDefault();
+    const name = pastedText.split("/").pop().split("?")[0] || "image-from-url";
+    setAttachmentChip({ type: "image", name, dataUrl: pastedText });
+  }
+});
+
+// ---- Drag and drop an image straight from a browser tab or another app ----
+const chatInputShell = document.querySelector(".chat-input-shell");
+
+["dragover", "dragenter"].forEach((eventName) => {
+  chatInputShell.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    chatInputShell.classList.add("drag-over");
+  });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+  chatInputShell.addEventListener(eventName, () => chatInputShell.classList.remove("drag-over"));
+});
+
+chatInputShell.addEventListener("drop", async (event) => {
+  event.preventDefault();
+  const file = event.dataTransfer?.files?.[0];
+  if (file && file.type.startsWith("image/")) {
+    await attachImageFile(file);
+    return;
+  }
+  const droppedText = event.dataTransfer?.getData("text/uri-list") || event.dataTransfer?.getData("text/plain");
+  if (droppedText && IMAGE_URL_PATTERN.test(droppedText.trim())) {
+    const url = droppedText.trim();
+    const name = url.split("/").pop().split("?")[0] || "image-from-url";
+    setAttachmentChip({ type: "image", name, dataUrl: url });
+  }
+});
 
 // ---- Chat mode selector (Build / Discover / Discuss) ----
 let chatMode = "build";
