@@ -1900,6 +1900,7 @@ chatMicButton.addEventListener("pointercancel", endPressRecording);
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (supabaseClient && !requireLogin()) return;
   if (isRecording) {
     addMessage("system", "Stop the recording before sending your message.");
     return;
@@ -2080,7 +2081,7 @@ const authGate = document.querySelector("#auth-gate");
 const authHeading = document.querySelector("#auth-heading");
 const authUsernameField = document.querySelector("#auth-username-field");
 const authUsernameInput = document.querySelector("#auth-username");
-const authIdentifierLabel = document.querySelector("#auth-identifier-label");
+const authIdentifierField = document.querySelector("#auth-identifier-field");
 const authIdentifierInput = document.querySelector("#auth-identifier");
 const authSignupEmailField = document.querySelector("#auth-signup-email-field");
 const authSignupEmailInput = document.querySelector("#auth-signup-email");
@@ -2112,21 +2113,25 @@ function setAuthMode(mode) {
     authHeading.textContent = "Create your TRUMP AI account";
     authUsernameField.hidden = false;
     authSignupEmailField.hidden = false;
-    authIdentifierLabel.textContent = "Username";
-    authIdentifierInput.placeholder = "Choose a unique username";
-    authIdentifierInput.autocomplete = "off";
+    authIdentifierField.hidden = true;
     authSubmitButton.textContent = "Sign up";
     authToggleModeButton.textContent = "Already have an account? Log in";
   } else {
     authHeading.textContent = "Log in to TRUMP AI";
     authUsernameField.hidden = true;
     authSignupEmailField.hidden = true;
-    authIdentifierLabel.textContent = "Username or email";
-    authIdentifierInput.placeholder = "yourname or you@example.com";
-    authIdentifierInput.autocomplete = "username";
+    authIdentifierField.hidden = false;
+    authIdentifierLabelReset();
     authSubmitButton.textContent = "Log in";
     authToggleModeButton.textContent = "Need an account? Sign up";
   }
+}
+
+function authIdentifierLabelReset() {
+  const label = document.querySelector("#auth-identifier-label");
+  label.textContent = "Username or email";
+  authIdentifierInput.placeholder = "yourname or you@example.com";
+  authIdentifierInput.autocomplete = "username";
 }
 
 authToggleModeButton?.addEventListener("click", () => setAuthMode(authMode === "login" ? "signup" : "login"));
@@ -2214,6 +2219,10 @@ authSubmitButton?.addEventListener("click", async () => {
 
 accountButton?.addEventListener("click", (event) => {
   event.stopPropagation();
+  if (!currentUser) {
+    showAuthGate();
+    return;
+  }
   if (accountPanel.hidden) {
     const rect = accountButton.getBoundingClientRect();
     accountPanel.style.top = `${rect.bottom + 8}px`;
@@ -2237,33 +2246,46 @@ accountSignoutButton?.addEventListener("click", async () => {
 
 let appStarted = false;
 
-async function startAppOnce(user) {
+async function startAppOnce() {
   if (appStarted) return;
   appStarted = true;
-  currentUser = user;
-  hideAuthGate();
-  updateAccountUI();
   await initializeApp();
 }
 
+async function switchToUser(user) {
+  currentUser = user;
+  hideAuthGate();
+  updateAccountUI();
+  await loadStoredState();
+  renderTasks();
+  renderAlertSummary();
+  renderSettings();
+  renderChatHistory();
+}
+
+function requireLogin() {
+  if (currentUser) return true;
+  showAuthGate();
+  return false;
+}
+
 async function bootstrapAuth() {
+  await startAppOnce();
+
   if (!supabaseClient) {
-    console.warn("Supabase client unavailable; running in local-only mode.");
-    await startAppOnce(null);
+    console.warn("Supabase client unavailable; accounts and cross-device sync are disabled.");
     accountButton && (accountButton.hidden = true);
     return;
   }
 
   const { data } = await supabaseClient.auth.getSession();
   if (data?.session?.user) {
-    await startAppOnce(data.session.user);
-  } else {
-    showAuthGate();
+    await switchToUser(data.session.user);
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_IN" && session?.user) {
-      startAppOnce(session.user);
+      switchToUser(session.user);
     } else if (event === "SIGNED_OUT") {
       window.location.reload();
     }

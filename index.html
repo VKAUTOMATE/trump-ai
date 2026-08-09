@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260807-username-login" />
+    <link rel="stylesheet" href="styles.css?v=20260809-optional-login" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js"></script>
@@ -373,10 +373,11 @@
 
     <div id="auth-gate" class="auth-gate" hidden>
       <div class="auth-card">
+        <button type="button" id="auth-close-button" class="auth-close-button" aria-label="Close">&times;</button>
         <h2 id="auth-heading">Log in to TRUMP AI</h2>
         <p>Your chats, tasks, and photos sync to your account and follow you to any device.</p>
         <label id="auth-username-field" hidden><span>Username</span><input id="auth-username" type="text" autocomplete="username" placeholder="Choose a unique username" /></label>
-        <label><span id="auth-identifier-label">Username or email</span><input id="auth-identifier" type="text" autocomplete="username" placeholder="yourname or you@example.com" /></label>
+        <label id="auth-identifier-field"><span id="auth-identifier-label">Username or email</span><input id="auth-identifier" type="text" autocomplete="username" placeholder="yourname or you@example.com" /></label>
         <label id="auth-signup-email-field" hidden><span>Email</span><input id="auth-signup-email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
         <label><span>Password</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" /></label>
         <p id="auth-error" class="auth-error" hidden></p>
@@ -393,6 +394,6 @@
       <button type="button" id="account-signout-button" class="subtle">Sign out</button>
     </div>
 
-    <script src="app.js?v=20260807-username-login"></script>
+    <script src="app.js?v=20260809-optional-login"></script>
   </body>
 </html>

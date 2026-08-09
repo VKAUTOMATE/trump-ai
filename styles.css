@@ -797,7 +797,35 @@ button:disabled {
   gap: 12px;
   max-width: 360px;
   padding: 28px;
+  position: relative;
   width: 100%;
+}
+
+.auth-close-button {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 16px;
+  font-weight: 700;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  min-height: auto;
+  padding: 0;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 28px;
+}
+
+.auth-close-button:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
 }
 
 .auth-card h2 {
