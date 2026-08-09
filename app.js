@@ -192,6 +192,17 @@ const DB_VERSION = 1;
 const STORE_NAME = "records";
 let dbPromise;
 
+// ---- Supabase (accounts + cross-device sync) ----
+// The anon/publishable key below is safe to expose in browser code by design —
+// Row Level Security on the database is what actually restricts access, not
+// keeping this key secret. Never put the "service role"/secret key here.
+const SUPABASE_URL = "https://gjhdqqjlibpdelnwiapa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqaGRxcWpsaWJwZGVsbndpYXBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxNDI1NzUsImV4cCI6MjEwMTcxODU3NX0.zkLclT6dj9qQLzPnWRAVv-tdW8J6kiizjHAkHegPkdE";
+const supabaseClient = window.supabase?.createClient
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+let currentUser = null;
+
 function normalizeModelName(modelName) {
   const value = (modelName || "").trim();
   if (!value || value === "gpt-4.4" || value === "gpt-4o-mini" || value === "gpt-5.4-mini" || value === "gpt-5-mini") return defaultSettings.modelName;
@@ -251,7 +262,52 @@ async function dbSet(key, value) {
   });
 }
 
+async function fetchUserRow() {
+  const { data, error } = await supabaseClient
+    .from("user_data")
+    .select("tasks, settings, chat_history")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function ensureUserRow() {
+  const row = await fetchUserRow();
+  if (row) return row;
+  const { error } = await supabaseClient
+    .from("user_data")
+    .insert({ user_id: currentUser.id, tasks: [], settings: {}, chat_history: [] });
+  if (error) throw error;
+  return { tasks: [], settings: {}, chat_history: [] };
+}
+
+async function syncUserRow() {
+  const { error } = await supabaseClient
+    .from("user_data")
+    .update({ tasks, settings, chat_history: conversationHistory })
+    .eq("user_id", currentUser.id);
+  if (error) throw error;
+}
+
 async function loadStoredState() {
+  if (supabaseClient && currentUser) {
+    try {
+      const row = await ensureUserRow();
+      tasks = (row.tasks?.length ? row.tasks : defaultTasks).map(normalizeTask);
+      settings = { ...defaultSettings, ...(row.settings || {}) };
+      settings.modelName = normalizeModelName(settings.modelName);
+      conversationHistory = sanitizeChatHistory(row.chat_history || []);
+      return;
+    } catch (error) {
+      tasks = (JSON.parse(localStorage.getItem("trump-ai-tasks") || "null") || defaultTasks).map(normalizeTask);
+      settings = { ...defaultSettings, ...(JSON.parse(localStorage.getItem("trump-ai-settings") || "null") || {}) };
+      settings.modelName = normalizeModelName(settings.modelName);
+      conversationHistory = sanitizeChatHistory(JSON.parse(localStorage.getItem("trump-ai-chat-history") || "[]"));
+      addMessage("system", `Couldn't reach your synced account data (${error.message}). Showing your last local copy instead.`);
+      return;
+    }
+  }
   try {
     const [storedTasks, storedSettings, storedChat] = await Promise.all([dbGet("tasks"), dbGet("settings"), dbGet("chatHistory")]);
     const legacyTasks = JSON.parse(localStorage.getItem("trump-ai-tasks") || "null");
@@ -278,6 +334,13 @@ async function saveTasks() {
   } catch (error) {
     addMessage("system", `Saved locally, but database sync failed: ${error.message}`);
   }
+  if (supabaseClient && currentUser) {
+    try {
+      await syncUserRow();
+    } catch (error) {
+      addMessage("system", `Saved locally, but cloud sync failed: ${error.message}`);
+    }
+  }
 }
 
 async function saveSettings() {
@@ -286,6 +349,13 @@ async function saveSettings() {
     await dbSet("settings", settings);
   } catch (error) {
     addMessage("system", `Settings saved locally, but database sync failed: ${error.message}`);
+  }
+  if (supabaseClient && currentUser) {
+    try {
+      await syncUserRow();
+    } catch (error) {
+      addMessage("system", `Settings saved locally, but cloud sync failed: ${error.message}`);
+    }
   }
 }
 
@@ -327,6 +397,13 @@ async function saveChatHistory() {
     await dbSet("chatHistory", conversationHistory);
   } catch (error) {
     console.warn("Chat history saved locally, but database sync failed:", error);
+  }
+  if (supabaseClient && currentUser) {
+    try {
+      await syncUserRow();
+    } catch (error) {
+      console.warn("Chat history saved locally, but cloud sync failed:", error);
+    }
   }
 }
 
@@ -557,7 +634,10 @@ function addMessage(role, text) {
   const moreButton = createMessageAction("More", "&#8943;");
   likeButton.addEventListener("click", () => toggleMessageReaction(likeButton, dislikeButton));
   dislikeButton.addEventListener("click", () => toggleMessageReaction(dislikeButton, likeButton));
-  moreButton.addEventListener("click", () => copyMessageText(textNode.dataset.rawText, copyButton));
+  moreButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openMessageMoreMenu(moreButton, textNode.dataset.rawText);
+  });
   actions.append(likeButton, dislikeButton, copyButton, moreButton);
   bubble.append(textNode, actions);
   message.append(avatar, bubble);
@@ -609,14 +689,84 @@ async function copyMessageText(text, button) {
     }
     button.innerHTML = "&#10003;";
     button.classList.add("copied");
-  } catch {
+  } catch (error) {
     button.innerHTML = "!";
+    addMessage("system", `Couldn't copy to clipboard: ${error.message}. Your browser may be blocking clipboard access on this page.`);
   } finally {
     setTimeout(() => {
       button.innerHTML = original;
       button.classList.remove("copied");
     }, 1400);
   }
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function closeMessageMoreMenu() {
+  document.querySelector(".message-more-menu")?.remove();
+}
+
+function openMessageMoreMenu(button, text) {
+  closeMessageMoreMenu();
+  const menu = document.createElement("div");
+  menu.className = "message-more-menu";
+  menu.setAttribute("role", "menu");
+
+  const copyItem = document.createElement("button");
+  copyItem.type = "button";
+  copyItem.textContent = "Copy text";
+  copyItem.addEventListener("click", () => {
+    copyMessageText(text, button);
+    closeMessageMoreMenu();
+  });
+
+  const downloadItem = document.createElement("button");
+  downloadItem.type = "button";
+  downloadItem.textContent = "Download as .txt";
+  downloadItem.addEventListener("click", () => {
+    downloadTextFile(`trump-ai-message-${Date.now()}.txt`, text);
+    closeMessageMoreMenu();
+  });
+
+  menu.append(copyItem, downloadItem);
+  document.body.append(menu);
+
+  const rect = button.getBoundingClientRect();
+  menu.style.position = "fixed";
+  menu.style.top = `${rect.bottom + 6}px`;
+  menu.style.left = `${Math.max(8, rect.right - 150)}px`;
+  requestAnimationFrame(() => {
+    const menuRect = menu.getBoundingClientRect();
+    const left = Math.min(window.innerWidth - menuRect.width - 8, Math.max(8, rect.right - menuRect.width));
+    menu.style.left = `${left}px`;
+  });
+
+  const closeOnOutside = (event) => {
+    if (!menu.contains(event.target) && event.target !== button) {
+      closeMessageMoreMenu();
+      document.removeEventListener("click", closeOnOutside, true);
+      document.removeEventListener("keydown", closeOnEscape);
+    }
+  };
+  const closeOnEscape = (event) => {
+    if (event.key === "Escape") {
+      closeMessageMoreMenu();
+      document.removeEventListener("click", closeOnOutside, true);
+      document.removeEventListener("keydown", closeOnEscape);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeOnOutside, true), 0);
+  document.addEventListener("keydown", closeOnEscape);
 }
 
 function renderEmptyChatState() {
@@ -1925,4 +2075,135 @@ async function initializeApp() {
   checkBackendStatus();
 }
 
-initializeApp();
+// ---- Auth wiring ----
+const authGate = document.querySelector("#auth-gate");
+const authEmailInput = document.querySelector("#auth-email");
+const authPasswordInput = document.querySelector("#auth-password");
+const authErrorEl = document.querySelector("#auth-error");
+const authStatusEl = document.querySelector("#auth-status");
+const authLoginButton = document.querySelector("#auth-login-button");
+const authSignupButton = document.querySelector("#auth-signup-button");
+const accountButton = document.querySelector("#account-button");
+const accountEmailLabel = document.querySelector("#account-email");
+const accountPanel = document.querySelector("#account-panel");
+const accountPanelEmail = document.querySelector("#account-panel-email");
+const accountSignoutButton = document.querySelector("#account-signout-button");
+
+function setAuthMessage(el, text) {
+  authErrorEl.hidden = true;
+  authStatusEl.hidden = true;
+  if (!text) return;
+  el.textContent = text;
+  el.hidden = false;
+}
+
+function showAuthGate() {
+  authGate.hidden = false;
+}
+
+function hideAuthGate() {
+  authGate.hidden = true;
+}
+
+function updateAccountUI() {
+  if (!currentUser) return;
+  accountEmailLabel.textContent = currentUser.email;
+  accountEmailLabel.hidden = false;
+  accountPanelEmail.textContent = currentUser.email;
+}
+
+authLoginButton?.addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value;
+  if (!email || !password) {
+    setAuthMessage(authErrorEl, "Enter your email and password.");
+    return;
+  }
+  setAuthMessage(authStatusEl, "Logging in...");
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) setAuthMessage(authErrorEl, error.message);
+});
+
+authSignupButton?.addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value;
+  if (!email || !password) {
+    setAuthMessage(authErrorEl, "Enter your email and password.");
+    return;
+  }
+  if (password.length < 6) {
+    setAuthMessage(authErrorEl, "Password must be at least 6 characters.");
+    return;
+  }
+  setAuthMessage(authStatusEl, "Creating your account...");
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) {
+    setAuthMessage(authErrorEl, error.message);
+    return;
+  }
+  if (!data.session) {
+    setAuthMessage(authStatusEl, "Account created — check your email to confirm, then log in.");
+  }
+});
+
+accountButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  if (accountPanel.hidden) {
+    const rect = accountButton.getBoundingClientRect();
+    accountPanel.style.top = `${rect.bottom + 8}px`;
+    accountPanel.style.left = `${Math.min(window.innerWidth - 236, rect.left)}px`;
+    accountPanel.hidden = false;
+  } else {
+    accountPanel.hidden = true;
+  }
+});
+
+document.addEventListener("click", (event) => {
+  if (!accountPanel.hidden && !accountPanel.contains(event.target) && event.target !== accountButton) {
+    accountPanel.hidden = true;
+  }
+});
+
+accountSignoutButton?.addEventListener("click", async () => {
+  accountPanel.hidden = true;
+  await supabaseClient?.auth.signOut();
+});
+
+let appStarted = false;
+
+async function startAppOnce(user) {
+  if (appStarted) return;
+  appStarted = true;
+  currentUser = user;
+  hideAuthGate();
+  updateAccountUI();
+  await initializeApp();
+}
+
+async function bootstrapAuth() {
+  if (!supabaseClient) {
+    console.warn("Supabase client unavailable; running in local-only mode.");
+    await startAppOnce(null);
+    accountButton && (accountButton.hidden = true);
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  if (data?.session?.user) {
+    await startAppOnce(data.session.user);
+  } else {
+    showAuthGate();
+  }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_IN" && session?.user) {
+      startAppOnce(session.user);
+    } else if (event === "SIGNED_OUT") {
+      window.location.reload();
+    }
+  });
+}
+
+bootstrapAuth();

@@ -10,10 +10,11 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260807-image-paste-drop" />
+    <link rel="stylesheet" href="styles.css?v=20260807-accounts-sync" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -111,6 +112,8 @@
                   </div>
                 </div>
                 <div class="chat-actions">
+                  <span id="account-email" class="account-email" hidden></span>
+                  <button id="account-button" class="subtle" type="button"><span class="button-icon">&#128100;</span>Account</button>
                   <button id="export-chat-button" class="subtle" type="button"><span class="button-icon">&#8681;</span>Export</button>
                   <button id="clear-chat-button" class="subtle" type="button"><span class="button-icon">&#8634;</span>New Chat</button>
                 </div>
@@ -368,6 +371,26 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260807-image-paste-drop"></script>
+    <div id="auth-gate" class="auth-gate" hidden>
+      <div class="auth-card">
+        <h2>Sign in to TRUMP AI</h2>
+        <p>Your chats, tasks, and photos sync to your account and follow you to any device.</p>
+        <label><span>Email</span><input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
+        <label><span>Password</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" /></label>
+        <p id="auth-error" class="auth-error" hidden></p>
+        <p id="auth-status" class="auth-status" hidden></p>
+        <div class="auth-actions">
+          <button type="button" id="auth-login-button">Log in</button>
+          <button type="button" id="auth-signup-button" class="subtle">Sign up</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="account-panel" class="account-panel" hidden>
+      <p id="account-panel-email"></p>
+      <button type="button" id="account-signout-button" class="subtle">Sign out</button>
+    </div>
+
+    <script src="app.js?v=20260807-accounts-sync"></script>
   </body>
 </html>

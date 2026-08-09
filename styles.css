@@ -774,6 +774,113 @@ button:disabled {
   object-fit: cover;
 }
 
+.auth-gate {
+  align-items: center;
+  background: rgba(20, 20, 22, 0.7);
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 900;
+}
+
+.auth-card {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  display: grid;
+  gap: 12px;
+  max-width: 360px;
+  padding: 28px;
+  width: 100%;
+}
+
+.auth-card h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.auth-card p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.auth-card label {
+  display: grid;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 4px;
+}
+
+.auth-card input {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-weight: 400;
+  height: 42px;
+  padding: 0 12px;
+}
+
+.auth-error {
+  background: rgba(204, 14, 28, 0.08);
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.auth-status {
+  background: rgba(16, 130, 80, 0.1);
+  border-radius: 8px;
+  color: #0f7a4e;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.auth-actions button {
+  flex: 1;
+}
+
+.account-email {
+  align-self: center;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-panel {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  position: fixed;
+  width: 220px;
+  z-index: 500;
+}
+
+.account-panel p {
+  font-size: 12px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .image-lightbox {
   align-items: center;
   background: rgba(0, 0, 0, 0.85);
@@ -1075,6 +1182,13 @@ button:disabled {
   gap: 4px;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   padding: 4px 6px 4px 6px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.chat-input-shell.drag-over {
+  background: rgba(204, 14, 28, 0.06);
+  border-color: var(--primary);
+  border-style: dashed;
 }
 
 .chat-input-shell input#chat-input {
@@ -1222,6 +1336,32 @@ button:disabled {
 }
 
 .chat-mode-menu button:hover {
+  background: rgba(204, 14, 28, 0.08);
+  color: var(--primary);
+}
+
+.message-more-menu {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  display: grid;
+  min-width: 150px;
+  overflow: hidden;
+  z-index: 500;
+}
+
+.message-more-menu button {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 9px 12px;
+  text-align: left;
+}
+
+.message-more-menu button:hover {
   background: rgba(204, 14, 28, 0.08);
   color: var(--primary);
 }
