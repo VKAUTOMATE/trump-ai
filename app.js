@@ -2079,24 +2079,36 @@ async function initializeApp() {
 // ---- Auth wiring ----
 const authGate = document.querySelector("#auth-gate");
 const authHeading = document.querySelector("#auth-heading");
+const authSubtitle = document.querySelector("#auth-subtitle");
+const authGoogleButton = document.querySelector("#auth-google-button");
+const authDivider = document.querySelector("#auth-divider");
 const authUsernameField = document.querySelector("#auth-username-field");
 const authUsernameInput = document.querySelector("#auth-username");
 const authIdentifierField = document.querySelector("#auth-identifier-field");
+const authIdentifierLabel = document.querySelector("#auth-identifier-label");
 const authIdentifierInput = document.querySelector("#auth-identifier");
 const authSignupEmailField = document.querySelector("#auth-signup-email-field");
 const authSignupEmailInput = document.querySelector("#auth-signup-email");
+const authPasswordField = document.querySelector("#auth-password-field");
 const authPasswordInput = document.querySelector("#auth-password");
+const authNewPasswordField = document.querySelector("#auth-new-password-field");
+const authNewPasswordInput = document.querySelector("#auth-new-password");
+const authConfirmPasswordField = document.querySelector("#auth-confirm-password-field");
+const authConfirmPasswordInput = document.querySelector("#auth-confirm-password");
 const authErrorEl = document.querySelector("#auth-error");
 const authStatusEl = document.querySelector("#auth-status");
 const authSubmitButton = document.querySelector("#auth-submit-button");
+const authForgotPasswordButton = document.querySelector("#auth-forgot-password");
 const authToggleModeButton = document.querySelector("#auth-toggle-mode");
+const authBackToLoginButton = document.querySelector("#auth-back-to-login");
+const authCloseButton = document.querySelector("#auth-close-button");
 const accountButton = document.querySelector("#account-button");
 const accountEmailLabel = document.querySelector("#account-email");
 const accountPanel = document.querySelector("#account-panel");
 const accountPanelEmail = document.querySelector("#account-panel-email");
 const accountSignoutButton = document.querySelector("#account-signout-button");
 
-let authMode = "login"; // "login" or "signup"
+let authMode = "login"; // "login" | "signup" | "reset-request" | "reset-confirm"
 
 function setAuthMessage(el, text) {
   authErrorEl.hidden = true;
@@ -2106,35 +2118,62 @@ function setAuthMessage(el, text) {
   el.hidden = false;
 }
 
+// Requires 8+ characters with upper, lower, a number, and a special character.
+function validatePasswordStrength(password) {
+  if (password.length < 8) return "Password must be at least 8 characters.";
+  if (!/[a-z]/.test(password)) return "Password must include a lowercase letter.";
+  if (!/[A-Z]/.test(password)) return "Password must include an uppercase letter.";
+  if (!/[0-9]/.test(password)) return "Password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include a special character (e.g. ! @ # $ %).";
+  return null;
+}
+
 function setAuthMode(mode) {
   authMode = mode;
   setAuthMessage(authErrorEl, "");
+
+  authGoogleButton.hidden = mode === "reset-confirm";
+  authDivider.hidden = mode === "reset-confirm";
+  authUsernameField.hidden = mode !== "signup";
+  authSignupEmailField.hidden = mode !== "signup";
+  authIdentifierField.hidden = !(mode === "login" || mode === "reset-request");
+  authPasswordField.hidden = !(mode === "login" || mode === "signup");
+  authNewPasswordField.hidden = mode !== "reset-confirm";
+  authConfirmPasswordField.hidden = mode !== "reset-confirm";
+  authForgotPasswordButton.hidden = mode !== "login";
+  authToggleModeButton.hidden = mode === "reset-confirm" || mode === "reset-request";
+  authBackToLoginButton.hidden = mode !== "reset-request";
+
   if (mode === "signup") {
     authHeading.textContent = "Create your TRUMP AI account";
-    authUsernameField.hidden = false;
-    authSignupEmailField.hidden = false;
-    authIdentifierField.hidden = true;
+    authSubtitle.textContent = "A real email is required once — after that you always log back in with just your username.";
     authSubmitButton.textContent = "Sign up";
-    authToggleModeButton.textContent = "Already have an account? Log in";
+  } else if (mode === "reset-request") {
+    authHeading.textContent = "Reset your password";
+    authSubtitle.textContent = "Enter your username or email and we'll send you a reset link.";
+    authIdentifierLabel.textContent = "Username or email";
+    authIdentifierInput.placeholder = "yourname or you@example.com";
+    authIdentifierInput.autocomplete = "username";
+    authSubmitButton.textContent = "Send reset link";
+  } else if (mode === "reset-confirm") {
+    authHeading.textContent = "Choose a new password";
+    authSubtitle.textContent = "Verified — set a new password to finish.";
+    authSubmitButton.textContent = "Save new password";
   } else {
     authHeading.textContent = "Log in to TRUMP AI";
-    authUsernameField.hidden = true;
-    authSignupEmailField.hidden = true;
-    authIdentifierField.hidden = false;
-    authIdentifierLabelReset();
+    authSubtitle.textContent = "Log in with Google, or use a username and password. Everyone else can keep using TRUMP AI without signing in.";
+    authIdentifierLabel.textContent = "Username or email";
+    authIdentifierInput.placeholder = "yourname or you@example.com";
+    authIdentifierInput.autocomplete = "username";
     authSubmitButton.textContent = "Log in";
-    authToggleModeButton.textContent = "Need an account? Sign up";
   }
-}
-
-function authIdentifierLabelReset() {
-  const label = document.querySelector("#auth-identifier-label");
-  label.textContent = "Username or email";
-  authIdentifierInput.placeholder = "yourname or you@example.com";
-  authIdentifierInput.autocomplete = "username";
+  authToggleModeButton.textContent = authMode === "signup" ? "Already have an account? Log in" : "Need an account? Sign up";
 }
 
 authToggleModeButton?.addEventListener("click", () => setAuthMode(authMode === "login" ? "signup" : "login"));
+authForgotPasswordButton?.addEventListener("click", () => setAuthMode("reset-request"));
+authBackToLoginButton?.addEventListener("click", () => setAuthMode("login"));
+authCloseButton?.addEventListener("click", () => hideAuthGate());
 
 function showAuthGate() {
   authGate.hidden = false;
@@ -2159,13 +2198,23 @@ async function updateAccountUI() {
   }
 }
 
+authGoogleButton?.addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  setAuthMessage(authStatusEl, "Redirecting to Google...");
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) setAuthMessage(authErrorEl, error.message);
+});
+
 authSubmitButton?.addEventListener("click", async () => {
   if (!supabaseClient) return;
-  const password = authPasswordInput.value;
 
   if (authMode === "signup") {
     const username = authUsernameInput.value.trim();
     const email = authSignupEmailInput.value.trim();
+    const password = authPasswordInput.value;
     if (!username || !email || !password) {
       setAuthMessage(authErrorEl, "Fill in a username, email, and password.");
       return;
@@ -2174,8 +2223,9 @@ authSubmitButton?.addEventListener("click", async () => {
       setAuthMessage(authErrorEl, "Username must be 3-20 characters: letters, numbers, or underscores only.");
       return;
     }
-    if (password.length < 6) {
-      setAuthMessage(authErrorEl, "Password must be at least 6 characters.");
+    const passwordError = validatePasswordStrength(password);
+    if (passwordError) {
+      setAuthMessage(authErrorEl, passwordError);
       return;
     }
     setAuthMessage(authStatusEl, "Creating your account...");
@@ -2194,7 +2244,59 @@ authSubmitButton?.addEventListener("click", async () => {
     return;
   }
 
+  if (authMode === "reset-request") {
+    const identifier = authIdentifierInput.value.trim();
+    if (!identifier) {
+      setAuthMessage(authErrorEl, "Enter your username or email.");
+      return;
+    }
+    setAuthMessage(authStatusEl, "Sending reset link...");
+    let email = identifier;
+    if (!identifier.includes("@")) {
+      const { data: resolvedEmail, error: lookupError } = await supabaseClient.rpc("get_email_for_username", {
+        input_username: identifier,
+      });
+      if (lookupError || !resolvedEmail) {
+        setAuthMessage(authErrorEl, "No account found with that username.");
+        return;
+      }
+      email = resolvedEmail;
+    }
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if (error) {
+      setAuthMessage(authErrorEl, error.message);
+      return;
+    }
+    setAuthMessage(authStatusEl, "Check your email for a reset link.");
+    return;
+  }
+
+  if (authMode === "reset-confirm") {
+    const newPassword = authNewPasswordInput.value;
+    const confirmPassword = authConfirmPasswordInput.value;
+    const passwordError = validatePasswordStrength(newPassword);
+    if (passwordError) {
+      setAuthMessage(authErrorEl, passwordError);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setAuthMessage(authErrorEl, "Passwords don't match.");
+      return;
+    }
+    setAuthMessage(authStatusEl, "Saving...");
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    if (error) {
+      setAuthMessage(authErrorEl, error.message);
+      return;
+    }
+    setAuthMessage(authStatusEl, "Password updated.");
+    setTimeout(() => hideAuthGate(), 1200);
+    return;
+  }
+
+  // login
   const identifier = authIdentifierInput.value.trim();
+  const password = authPasswordInput.value;
   if (!identifier || !password) {
     setAuthMessage(authErrorEl, "Enter your username or email, and your password.");
     return;
@@ -2284,7 +2386,10 @@ async function bootstrapAuth() {
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session?.user) {
+    if (event === "PASSWORD_RECOVERY") {
+      showAuthGate();
+      setAuthMode("reset-confirm");
+    } else if (event === "SIGNED_IN" && session?.user) {
       switchToUser(session.user);
     } else if (event === "SIGNED_OUT") {
       window.location.reload();

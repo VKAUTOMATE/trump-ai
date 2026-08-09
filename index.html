@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260809-optional-login" />
+    <link rel="stylesheet" href="styles.css?v=20260809-google-reset-strongpw" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js"></script>
@@ -375,17 +375,35 @@
       <div class="auth-card">
         <button type="button" id="auth-close-button" class="auth-close-button" aria-label="Close">&times;</button>
         <h2 id="auth-heading">Log in to TRUMP AI</h2>
-        <p>Your chats, tasks, and photos sync to your account and follow you to any device.</p>
+        <p id="auth-subtitle">Log in with Google, or use a username and password. Everyone else can keep using TRUMP AI without signing in.</p>
+
+        <button type="button" id="auth-google-button" class="auth-oauth-button">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.85.87-3.04.87-2.34 0-4.32-1.58-5.03-3.71H.95v2.33A9 9 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.95A9 9 0 0 0 0 9c0 1.45.35 2.83.95 4.05l3.02-2.33z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .95 4.95l3.02 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+          </svg>
+          Continue with Google
+        </button>
+        <div id="auth-divider" class="auth-divider"><span>or</span></div>
+
         <label id="auth-username-field" hidden><span>Username</span><input id="auth-username" type="text" autocomplete="username" placeholder="Choose a unique username" /></label>
         <label id="auth-identifier-field"><span id="auth-identifier-label">Username or email</span><input id="auth-identifier" type="text" autocomplete="username" placeholder="yourname or you@example.com" /></label>
         <label id="auth-signup-email-field" hidden><span>Email</span><input id="auth-signup-email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
-        <label><span>Password</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" /></label>
+        <label id="auth-password-field"><span>Password</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 8 characters, incl. a symbol" /></label>
+        <label id="auth-new-password-field" hidden><span>New password</span><input id="auth-new-password" type="password" autocomplete="new-password" placeholder="At least 8 characters, incl. a symbol" /></label>
+        <label id="auth-confirm-password-field" hidden><span>Confirm new password</span><input id="auth-confirm-password" type="password" autocomplete="new-password" /></label>
+
         <p id="auth-error" class="auth-error" hidden></p>
         <p id="auth-status" class="auth-status" hidden></p>
+
         <div class="auth-actions">
           <button type="button" id="auth-submit-button">Log in</button>
         </div>
+        <button type="button" id="auth-forgot-password" class="auth-toggle-link">Forgot password?</button>
         <button type="button" id="auth-toggle-mode" class="auth-toggle-link">Need an account? Sign up</button>
+        <button type="button" id="auth-back-to-login" class="auth-toggle-link" hidden>Back to log in</button>
       </div>
     </div>
 
@@ -394,6 +412,6 @@
       <button type="button" id="account-signout-button" class="subtle">Sign out</button>
     </div>
 
-    <script src="app.js?v=20260809-optional-login"></script>
+    <script src="app.js?v=20260809-google-reset-strongpw"></script>
   </body>
 </html>
