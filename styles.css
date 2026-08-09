@@ -852,6 +852,18 @@ button:disabled {
   flex: 1;
 }
 
+.auth-toggle-link {
+  background: transparent;
+  border: 0;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: auto;
+  padding: 2px 0;
+  text-align: center;
+}
+
 .account-email {
   align-self: center;
   color: var(--muted);

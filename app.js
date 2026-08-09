@@ -2077,17 +2077,25 @@ async function initializeApp() {
 
 // ---- Auth wiring ----
 const authGate = document.querySelector("#auth-gate");
-const authEmailInput = document.querySelector("#auth-email");
+const authHeading = document.querySelector("#auth-heading");
+const authUsernameField = document.querySelector("#auth-username-field");
+const authUsernameInput = document.querySelector("#auth-username");
+const authIdentifierLabel = document.querySelector("#auth-identifier-label");
+const authIdentifierInput = document.querySelector("#auth-identifier");
+const authSignupEmailField = document.querySelector("#auth-signup-email-field");
+const authSignupEmailInput = document.querySelector("#auth-signup-email");
 const authPasswordInput = document.querySelector("#auth-password");
 const authErrorEl = document.querySelector("#auth-error");
 const authStatusEl = document.querySelector("#auth-status");
-const authLoginButton = document.querySelector("#auth-login-button");
-const authSignupButton = document.querySelector("#auth-signup-button");
+const authSubmitButton = document.querySelector("#auth-submit-button");
+const authToggleModeButton = document.querySelector("#auth-toggle-mode");
 const accountButton = document.querySelector("#account-button");
 const accountEmailLabel = document.querySelector("#account-email");
 const accountPanel = document.querySelector("#account-panel");
 const accountPanelEmail = document.querySelector("#account-panel-email");
 const accountSignoutButton = document.querySelector("#account-signout-button");
+
+let authMode = "login"; // "login" or "signup"
 
 function setAuthMessage(el, text) {
   authErrorEl.hidden = true;
@@ -2097,55 +2105,111 @@ function setAuthMessage(el, text) {
   el.hidden = false;
 }
 
+function setAuthMode(mode) {
+  authMode = mode;
+  setAuthMessage(authErrorEl, "");
+  if (mode === "signup") {
+    authHeading.textContent = "Create your TRUMP AI account";
+    authUsernameField.hidden = false;
+    authSignupEmailField.hidden = false;
+    authIdentifierLabel.textContent = "Username";
+    authIdentifierInput.placeholder = "Choose a unique username";
+    authIdentifierInput.autocomplete = "off";
+    authSubmitButton.textContent = "Sign up";
+    authToggleModeButton.textContent = "Already have an account? Log in";
+  } else {
+    authHeading.textContent = "Log in to TRUMP AI";
+    authUsernameField.hidden = true;
+    authSignupEmailField.hidden = true;
+    authIdentifierLabel.textContent = "Username or email";
+    authIdentifierInput.placeholder = "yourname or you@example.com";
+    authIdentifierInput.autocomplete = "username";
+    authSubmitButton.textContent = "Log in";
+    authToggleModeButton.textContent = "Need an account? Sign up";
+  }
+}
+
+authToggleModeButton?.addEventListener("click", () => setAuthMode(authMode === "login" ? "signup" : "login"));
+
 function showAuthGate() {
   authGate.hidden = false;
+  setAuthMode("login");
 }
 
 function hideAuthGate() {
   authGate.hidden = true;
 }
 
-function updateAccountUI() {
+async function updateAccountUI() {
   if (!currentUser) return;
   accountEmailLabel.textContent = currentUser.email;
   accountEmailLabel.hidden = false;
   accountPanelEmail.textContent = currentUser.email;
+  if (supabaseClient) {
+    const { data } = await supabaseClient.from("profiles").select("username").eq("id", currentUser.id).maybeSingle();
+    if (data?.username) {
+      accountEmailLabel.textContent = data.username;
+      accountPanelEmail.textContent = `${data.username} · ${currentUser.email}`;
+    }
+  }
 }
 
-authLoginButton?.addEventListener("click", async () => {
+authSubmitButton?.addEventListener("click", async () => {
   if (!supabaseClient) return;
-  const email = authEmailInput.value.trim();
   const password = authPasswordInput.value;
-  if (!email || !password) {
-    setAuthMessage(authErrorEl, "Enter your email and password.");
+
+  if (authMode === "signup") {
+    const username = authUsernameInput.value.trim();
+    const email = authSignupEmailInput.value.trim();
+    if (!username || !email || !password) {
+      setAuthMessage(authErrorEl, "Fill in a username, email, and password.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+      setAuthMessage(authErrorEl, "Username must be 3-20 characters: letters, numbers, or underscores only.");
+      return;
+    }
+    if (password.length < 6) {
+      setAuthMessage(authErrorEl, "Password must be at least 6 characters.");
+      return;
+    }
+    setAuthMessage(authStatusEl, "Creating your account...");
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { data: { username } },
+    });
+    if (error) {
+      setAuthMessage(authErrorEl, error.message);
+      return;
+    }
+    if (!data.session) {
+      setAuthMessage(authStatusEl, "Account created — check your email to confirm, then log in.");
+    }
+    return;
+  }
+
+  const identifier = authIdentifierInput.value.trim();
+  if (!identifier || !password) {
+    setAuthMessage(authErrorEl, "Enter your username or email, and your password.");
     return;
   }
   setAuthMessage(authStatusEl, "Logging in...");
+
+  let email = identifier;
+  if (!identifier.includes("@")) {
+    const { data: resolvedEmail, error: lookupError } = await supabaseClient.rpc("get_email_for_username", {
+      input_username: identifier,
+    });
+    if (lookupError || !resolvedEmail) {
+      setAuthMessage(authErrorEl, "No account found with that username.");
+      return;
+    }
+    email = resolvedEmail;
+  }
+
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) setAuthMessage(authErrorEl, error.message);
-});
-
-authSignupButton?.addEventListener("click", async () => {
-  if (!supabaseClient) return;
-  const email = authEmailInput.value.trim();
-  const password = authPasswordInput.value;
-  if (!email || !password) {
-    setAuthMessage(authErrorEl, "Enter your email and password.");
-    return;
-  }
-  if (password.length < 6) {
-    setAuthMessage(authErrorEl, "Password must be at least 6 characters.");
-    return;
-  }
-  setAuthMessage(authStatusEl, "Creating your account...");
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-  if (error) {
-    setAuthMessage(authErrorEl, error.message);
-    return;
-  }
-  if (!data.session) {
-    setAuthMessage(authStatusEl, "Account created — check your email to confirm, then log in.");
-  }
 });
 
 accountButton?.addEventListener("click", (event) => {
