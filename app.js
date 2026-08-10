@@ -2389,6 +2389,17 @@ async function bootstrapAuth() {
     if (event === "PASSWORD_RECOVERY") {
       showAuthGate();
       setAuthMode("reset-confirm");
+      if (session?.user && supabaseClient) {
+        supabaseClient
+          .from("profiles")
+          .select("username")
+          .eq("id", session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            const name = data?.username || session.user.email;
+            authSubtitle.textContent = `Hi ${name} — verified. Set a new password to finish.`;
+          });
+      }
     } else if (event === "SIGNED_IN" && session?.user) {
       switchToUser(session.user);
     } else if (event === "SIGNED_OUT") {
