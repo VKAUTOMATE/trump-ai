@@ -2290,7 +2290,12 @@ authSubmitButton?.addEventListener("click", async () => {
       return;
     }
     setAuthMessage(authStatusEl, "Password updated.");
-    setTimeout(() => hideAuthGate(), 1200);
+    isPasswordRecoveryFlow = false;
+    const { data } = await supabaseClient.auth.getSession();
+    setTimeout(() => {
+      hideAuthGate();
+      if (data?.session?.user) switchToUser(data.session.user);
+    }, 1200);
     return;
   }
 
@@ -2371,25 +2376,26 @@ function requireLogin() {
   return false;
 }
 
-async function bootstrapAuth() {
-  await startAppOnce();
+let isPasswordRecoveryFlow = false;
 
+async function bootstrapAuth() {
   if (!supabaseClient) {
     console.warn("Supabase client unavailable; accounts and cross-device sync are disabled.");
     accountButton && (accountButton.hidden = true);
+    await startAppOnce();
     return;
   }
 
-  const { data } = await supabaseClient.auth.getSession();
-  if (data?.session?.user) {
-    await switchToUser(data.session.user);
-  }
-
+  // Register the listener BEFORE any await below — Supabase can detect and
+  // process a password-recovery link from the URL almost immediately after
+  // the client is created, so attaching this any later risks missing it.
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === "PASSWORD_RECOVERY") {
+      isPasswordRecoveryFlow = true;
+      currentUser = session?.user || currentUser;
       showAuthGate();
       setAuthMode("reset-confirm");
-      if (session?.user && supabaseClient) {
+      if (session?.user) {
         supabaseClient
           .from("profiles")
           .select("username")
@@ -2400,12 +2406,28 @@ async function bootstrapAuth() {
             authSubtitle.textContent = `Hi ${name} — verified. Set a new password to finish.`;
           });
       }
-    } else if (event === "SIGNED_IN" && session?.user) {
+      return;
+    }
+    if (event === "SIGNED_IN" && session?.user) {
+      if (isPasswordRecoveryFlow) {
+        // Don't auto-close the reset screen — the person hasn't set their new password yet.
+        currentUser = session.user;
+        return;
+      }
       switchToUser(session.user);
-    } else if (event === "SIGNED_OUT") {
+      return;
+    }
+    if (event === "SIGNED_OUT") {
       window.location.reload();
     }
   });
+
+  await startAppOnce();
+
+  const { data } = await supabaseClient.auth.getSession();
+  if (data?.session?.user && !isPasswordRecoveryFlow) {
+    await switchToUser(data.session.user);
+  }
 }
 
 bootstrapAuth();
