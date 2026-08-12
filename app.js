@@ -164,16 +164,44 @@ function getApiBase() {
   return "";
 }
 
-async function fetchBackendJson(path, options = {}) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Errors worth retrying automatically: network blips, rate limits, and
+// server-side hiccups. NOT worth retrying: bad/missing API keys, auth
+// failures, or bad requests — retrying those just wastes time and quota.
+function isRetryableError(error, status) {
+  if (status === 429 || (status >= 500 && status < 600)) return true;
+  if (!status && /network|fetch|timeout/i.test(error?.message || "")) return true;
+  return false;
+}
+
+async function fetchBackendJson(path, options = {}, retriesLeft = 2) {
   const headers = { ...(options.headers || {}) };
   if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   if (settings.backendSharedKey && !headers.Authorization) headers.Authorization = `Bearer ${settings.backendSharedKey}`;
-  const response = await fetch(`${getApiBase()}${path}`, {
-    ...options,
-    headers,
-  });
+
+  let response;
+  try {
+    response = await fetch(`${getApiBase()}${path}`, { ...options, headers });
+  } catch (networkError) {
+    if (retriesLeft > 0) {
+      await sleep(600 * (3 - retriesLeft));
+      return fetchBackendJson(path, options, retriesLeft - 1);
+    }
+    throw new Error(`Network error reaching the backend: ${networkError.message}`);
+  }
+
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Backend returned ${response.status}`);
+  if (!response.ok) {
+    const message = data.error || `Backend returned ${response.status}`;
+    if (retriesLeft > 0 && isRetryableError(new Error(message), response.status)) {
+      await sleep(600 * (3 - retriesLeft));
+      return fetchBackendJson(path, options, retriesLeft - 1);
+    }
+    throw new Error(message);
+  }
   return data;
 }
 
@@ -899,7 +927,12 @@ function classifyPrompt(prompt) {
 
 function buildSystemPrompt(prompt) {
   const domain = classifyPrompt(prompt);
-  const profile = `Tone: ${settings.tone}. Depth: ${settings.length}. Citations expected: ${settings.citations ? "yes, when sources are supplied" : "not required"}.`;
+  const depthGuidance = {
+    short: "Short: 2-4 sentences or a tight list. Answer directly, skip preamble and background unless asked.",
+    deep: "Deep: thorough and complete. Explain the reasoning and context behind the answer, not just the conclusion. Cover edge cases, trade-offs, and relevant specifics (numbers, names, dates) rather than vague generalities. Use headers/sections for longer answers. Don't pad with filler — every sentence should add real information.",
+    balanced: "Balanced: give a complete, substantive answer with real specifics (names, numbers, dates, sources) rather than a vague summary — but stay focused, no filler or repeated caveats. A few sentences of useful context is expected, not just a bare headline list.",
+  }[settings.length] || "Balanced depth: complete and specific, not padded.";
+  const profile = `Tone: ${settings.tone}. ${depthGuidance} Citations expected: ${settings.citations ? "yes, when sources are supplied" : "not required"}. Always answer with real, concrete detail — never a placeholder, a generic non-answer, or "I don't have that information" when the live context or your own knowledge can answer it.`;
   const sources = [
     settings.newsSource ? `News source: ${settings.newsSource}` : "News source: not configured",
     settings.marketSource ? `Market source: ${settings.marketSource}` : "Market source: not configured",
@@ -962,7 +995,7 @@ async function askOpenAI(prompt, imageDataUrl) {
       history: recentHistory,
       systemPrompt: buildSystemPrompt(prompt),
       modelName: settings.modelName || defaultSettings.modelName,
-      maxOutputTokens: settings.length === "deep" ? 1400 : settings.length === "short" ? 450 : 900,
+      maxOutputTokens: settings.length === "deep" ? 2200 : settings.length === "short" ? 600 : 1400,
     }),
   });
 
@@ -1951,19 +1984,40 @@ chatForm.addEventListener("submit", async (event) => {
   const thinkingMessage = addMessage("ai", "Thinking through backend...");
 
   try {
-    const reply = await askOpenAI(sendText, imageDataUrl);
-    updateMessageText(thinkingMessage, reply);
-    await recordChatMessage("ai", reply);
-  } catch (error) {
-    const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(displayPrompt)}`;
-    updateMessageText(thinkingMessage, fallback);
-    await recordChatMessage("ai", fallback);
+    await sendToAIAndRender(sendText, imageDataUrl, thinkingMessage, displayPrompt);
   } finally {
     chatInput.disabled = false;
     setLoadingButton(chatSendButton, false);
     chatInput.focus();
   }
 });
+
+async function sendToAIAndRender(sendText, imageDataUrl, messageEl, offlineReplyPrompt) {
+  updateMessageText(messageEl, "Thinking through backend...");
+  messageEl.querySelector(".retry-ai-button")?.remove();
+  try {
+    const reply = await askOpenAI(sendText, imageDataUrl);
+    updateMessageText(messageEl, reply);
+    await recordChatMessage("ai", reply);
+  } catch (error) {
+    const fallback = `${error.message}\n\nOffline fallback: ${generateOfflineReply(offlineReplyPrompt || sendText)}`;
+    updateMessageText(messageEl, fallback);
+    await recordChatMessage("ai", fallback);
+    const bubble = messageEl.querySelector(".message-bubble");
+    if (bubble) {
+      const retryButton = document.createElement("button");
+      retryButton.type = "button";
+      retryButton.className = "retry-ai-button";
+      retryButton.textContent = "Retry";
+      retryButton.addEventListener("click", () => {
+        retryButton.disabled = true;
+        retryButton.textContent = "Retrying...";
+        sendToAIAndRender(sendText, imageDataUrl, messageEl, offlineReplyPrompt);
+      });
+      bubble.append(retryButton);
+    }
+  }
+}
 
 exportChatButton.addEventListener("click", exportChatHistory);
 clearChatButton.addEventListener("click", async () => {
