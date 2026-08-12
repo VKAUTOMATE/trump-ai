@@ -77,7 +77,7 @@ const defaultSettings = {
   sportsSource: "",
   modelName: "gpt-4o",
   tone: "neutral",
-  length: "balanced",
+  length: "deep",
   citations: true,
   alerts: true,
   favoriteTeams: "",
@@ -928,10 +928,15 @@ function classifyPrompt(prompt) {
 function buildSystemPrompt(prompt) {
   const domain = classifyPrompt(prompt);
   const depthGuidance = {
-    short: "Short: 2-4 sentences or a tight list. Answer directly, skip preamble and background unless asked.",
-    deep: "Deep: thorough and complete. Explain the reasoning and context behind the answer, not just the conclusion. Cover edge cases, trade-offs, and relevant specifics (numbers, names, dates) rather than vague generalities. Use headers/sections for longer answers. Don't pad with filler — every sentence should add real information.",
-    balanced: "Balanced: give a complete, substantive answer with real specifics (names, numbers, dates, sources) rather than a vague summary — but stay focused, no filler or repeated caveats. A few sentences of useful context is expected, not just a bare headline list.",
-  }[settings.length] || "Balanced depth: complete and specific, not padded.";
+    short: "LENGTH MODE: Short. 2-4 sentences or a tight list. Answer directly, skip preamble and background unless asked.",
+    deep: `LENGTH MODE: Deep dive. This is a hard requirement, not a suggestion:
+- Minimum 4 paragraphs OR a structured multi-section answer with headers, unless the question is a simple factual lookup (a date, a score, a yes/no) that has nothing more to add.
+- Every claim needs a concrete anchor: a specific number, name, date, mechanism, or source — never a vague generality like "several factors" or "many experts believe" without naming which factors or which experts.
+- Explain the WHY and HOW behind the answer, not just the WHAT. If there's a cause, a trade-off, a counterargument, or a next step, include it.
+- If the topic has nuance, cover it — don't flatten a complex answer into a soundbite.
+- Do not artificially cut the answer short to save space. Use the room you have.`,
+    balanced: `LENGTH MODE: Balanced. Give a complete, substantive answer with real specifics (names, numbers, dates, sources) rather than a vague summary. At least 2-3 sentences of real context beyond the bare fact, unless the question is a simple lookup. No filler, no repeated caveats, no padding — but don't be artificially terse either.`,
+  }[settings.length] || "LENGTH MODE: Balanced depth: complete and specific, not padded.";
   const profile = `Tone: ${settings.tone}. ${depthGuidance} Citations expected: ${settings.citations ? "yes, when sources are supplied" : "not required"}. Always answer with real, concrete detail — never a placeholder, a generic non-answer, or "I don't have that information" when the live context or your own knowledge can answer it.`;
   const sources = [
     settings.newsSource ? `News source: ${settings.newsSource}` : "News source: not configured",
@@ -995,7 +1000,7 @@ async function askOpenAI(prompt, imageDataUrl) {
       history: recentHistory,
       systemPrompt: buildSystemPrompt(prompt),
       modelName: settings.modelName || defaultSettings.modelName,
-      maxOutputTokens: settings.length === "deep" ? 2200 : settings.length === "short" ? 600 : 1400,
+      maxOutputTokens: settings.length === "deep" ? 2800 : settings.length === "short" ? 600 : 1400,
     }),
   });
 
@@ -2114,6 +2119,12 @@ async function checkBackendStatus() {
   renderReadiness();
 }
 
+async function autoLoadCorePipelines() {
+  const [newsResult, sportsResult] = await Promise.allSettled([loadLiveNews(), loadLiveSports()]);
+  if (newsResult.status === "fulfilled") renderLiveCards("news", newsResult.value);
+  if (sportsResult.status === "fulfilled") renderLiveCards("sports", sportsResult.value);
+}
+
 async function initializeApp() {
   await loadStoredState();
   refreshBrief();
@@ -2127,6 +2138,7 @@ async function initializeApp() {
   renderLandingCards();
   wirePreferenceAutosave();
   renderChatHistory();
+  await autoLoadCorePipelines();
   checkBackendStatus();
 }
 
