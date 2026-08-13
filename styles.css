@@ -1,39 +1,44 @@
 :root {
   color-scheme: light;
-  --bg: #f6f7fb;
+  --bg: #eceef3;
   --panel: #ffffff;
-  --panel-strong: #f2f5fa;
-  --text: #171923;
-  --muted: #5f6878;
-  --line: #dfe5ee;
-  --primary: #c1121f;
-  --primary-dark: #8f0d17;
+  --panel-strong: #e3e7f0;
+  --text: #12141c;
+  --muted: #5a6172;
+  --line: #d4d9e3;
+  --primary: #a4161a;
+  --primary-dark: #6e0f12;
+  --navy: #152238;
   --blue: #2457d6;
-  --gold: #b98216;
+  --gold: #93701f;
   --green: #16805b;
   --amber: #b76b00;
   --red: #b42318;
-  --shadow: 0 14px 36px rgba(22, 29, 45, 0.08);
-  --shadow-soft: 0 6px 18px rgba(22, 29, 45, 0.06);
+  --shadow: 0 14px 36px rgba(21, 34, 56, 0.1);
+  --shadow-soft: 0 2px 0 rgba(21, 34, 56, 0.06);
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, monospace;
 }
 
 body.dark {
   color-scheme: dark;
-  --bg: #14151a;
-  --panel: #20222a;
-  --panel-strong: #2a2d37;
-  --text: #f5f7fb;
-  --muted: #b2bbc9;
-  --line: #3a3f4b;
-  --primary: #ff4d5a;
+  --bg: #0e1219;
+  --panel: #191d27;
+  --panel-strong: #232837;
+  --text: #f2f4f9;
+  --muted: #a8b0c2;
+  --line: #333a4a;
+  --primary: #e2545c;
   --primary-dark: #ff9aa1;
+  --navy: #cdd6ea;
   --blue: #7ea2ff;
-  --gold: #ffd06e;
+  --gold: #d8b567;
   --green: #6ce0ad;
   --amber: #ffc46b;
   --red: #ff928a;
-  --shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
-  --shadow-soft: 0 8px 20px rgba(0, 0, 0, 0.2);
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -47,9 +52,26 @@ body.dark {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-body);
   margin: 0;
   min-height: 100vh;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.eyebrow,
+.card-label {
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
 }
 
 button,
@@ -160,17 +182,6 @@ button:disabled {
 
 .brand h1 {
   font-size: 24px;
-  letter-spacing: 0;
-}
-
-.eyebrow,
-.card-label {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
-  margin: 0 0 6px;
-  text-transform: uppercase;
 }
 
 .sidebar .eyebrow,
@@ -276,6 +287,15 @@ button:disabled {
   gap: 16px;
   justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.topbar {
+  border-bottom: 3px double var(--line);
+  padding-bottom: 16px;
+}
+
+#view-title {
+  font-size: 30px;
 }
 
 .top-actions {
@@ -758,6 +778,27 @@ button:disabled {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
+}
+
+.retry-ai-button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  height: 30px;
+  margin-top: 4px;
+  min-height: auto;
+  padding: 0 12px;
+}
+
+.retry-ai-button:hover {
+  background: rgba(204, 14, 28, 0.08);
+}
+
+.retry-ai-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .message-audio {
@@ -1701,7 +1742,9 @@ textarea,
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--blue);
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
   padding: 8px 12px;
 }
 
