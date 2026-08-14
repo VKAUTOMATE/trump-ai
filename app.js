@@ -925,6 +925,45 @@ function classifyPrompt(prompt) {
   return "base";
 }
 
+// Popular club names mapped to the league code your backend already supports,
+// so a question about a specific team can trigger a fresh, targeted fetch
+// instead of relying on whatever happened to load first.
+const TEAM_LEAGUE_MAP = {
+  "manchester united": "EPL", "man united": "EPL", "man utd": "EPL",
+  "manchester city": "EPL", "man city": "EPL", liverpool: "EPL", arsenal: "EPL",
+  chelsea: "EPL", tottenham: "EPL", spurs: "EPL", newcastle: "EPL", "aston villa": "EPL",
+  "real madrid": "LALIGA", barcelona: "LALIGA", barca: "LALIGA", "atletico madrid": "LALIGA", sevilla: "LALIGA",
+  juventus: "SERIEA", "ac milan": "SERIEA", "inter milan": "SERIEA", napoli: "SERIEA", roma: "SERIEA", lazio: "SERIEA",
+  "bayern munich": "BUNDESLIGA", bayern: "BUNDESLIGA", "borussia dortmund": "BUNDESLIGA", dortmund: "BUNDESLIGA", leipzig: "BUNDESLIGA",
+  psg: "LIGUE1", "paris saint-germain": "LIGUE1", "paris saint germain": "LIGUE1", marseille: "LIGUE1", monaco: "LIGUE1", lyon: "LIGUE1",
+  "inter miami": "MLS", lafc: "MLS", "la galaxy": "MLS", "atlanta united": "MLS",
+  "club america": "LIGAMX", chivas: "LIGAMX", "cruz azul": "LIGAMX",
+};
+
+function detectLeagueFromPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  for (const [team, league] of Object.entries(TEAM_LEAGUE_MAP)) {
+    if (lower.includes(team)) return league;
+  }
+  return null;
+}
+
+// Picks the items that actually relate to the question first, instead of
+// blindly taking whichever items happen to be earliest in the array —
+// otherwise a relevant match can get silently cut off by the item cap.
+function selectRelevantItems(items, prompt, limit = 6) {
+  if (!items.length) return [];
+  const words = (prompt || "").toLowerCase().split(/\W+/).filter((word) => word.length > 3);
+  const scored = items.map((item) => {
+    const text = `${item.title || ""} ${item.text || ""} ${item.value || ""}`.toLowerCase();
+    const matchCount = words.filter((word) => text.includes(word)).length;
+    return { item, matchCount };
+  });
+  const relevant = scored.filter((entry) => entry.matchCount > 0).sort((a, b) => b.matchCount - a.matchCount).map((entry) => entry.item);
+  const rest = items.filter((item) => !relevant.includes(item));
+  return [...relevant, ...rest].slice(0, limit);
+}
+
 function buildSystemPrompt(prompt) {
   const domain = classifyPrompt(prompt);
   const depthGuidance = {
@@ -950,7 +989,8 @@ function buildSystemPrompt(prompt) {
   const liveSummary = Object.entries(liveData)
     .map(([topic, items]) => {
       if (!items.length) return `${topic}: no live data loaded`;
-      return `${topic}: ${items.slice(0, 4).map((item) => item.title || item.value || item.text).join("; ")}`;
+      const relevantItems = selectRelevantItems(items, prompt, 6);
+      return `${topic}: ${relevantItems.map((item) => item.title || item.value || item.text).join("; ")}`;
     })
     .join("\n");
   const userPreferences = [
@@ -1948,6 +1988,14 @@ chatForm.addEventListener("submit", async (event) => {
   const recording = pendingRecording;
   if (!prompt && !attachment && !recording) return;
 
+  // If the question names a specific team, fetch that team's league fresh
+  // right now, in parallel with everything else below, so it's ready by the
+  // time we actually need it for context.
+  const detectedLeague = detectLeagueFromPrompt(prompt);
+  const leagueRefreshPromise = detectedLeague
+    ? fetchBackendJson(`/api/live/sports?league=${encodeURIComponent(detectedLeague)}`).catch(() => null)
+    : null;
+
   const modeInstruction = chatModeCopy[chatMode]?.instruction;
   const displayPrompt = prompt || (attachment?.type === "image" ? "(image)" : "(voice message)");
   const displayText = attachment ? `${displayPrompt}\n\n📎 ${attachment.name}` : displayPrompt;
@@ -1987,6 +2035,16 @@ chatForm.addEventListener("submit", async (event) => {
   recordingChip.hidden = true;
   setLoadingButton(chatSendButton, true, "Thinking");
   const thinkingMessage = addMessage("ai", "Thinking through backend...");
+
+  if (leagueRefreshPromise) {
+    const freshData = await leagueRefreshPromise;
+    const freshItems = freshData?.items || [];
+    if (freshItems.length) {
+      const existingTitles = new Set(freshItems.map((item) => item.title));
+      liveData.sports = [...freshItems, ...liveData.sports.filter((item) => !existingTitles.has(item.title))];
+      renderLiveCards("sports", liveData.sports);
+    }
+  }
 
   try {
     await sendToAIAndRender(sendText, imageDataUrl, thinkingMessage, displayPrompt);
@@ -2147,6 +2205,7 @@ const authGate = document.querySelector("#auth-gate");
 const authHeading = document.querySelector("#auth-heading");
 const authSubtitle = document.querySelector("#auth-subtitle");
 const authGoogleButton = document.querySelector("#auth-google-button");
+const authMicrosoftButton = document.querySelector("#auth-microsoft-button");
 const authDivider = document.querySelector("#auth-divider");
 const authUsernameField = document.querySelector("#auth-username-field");
 const authUsernameInput = document.querySelector("#auth-username");
@@ -2199,6 +2258,7 @@ function setAuthMode(mode) {
   setAuthMessage(authErrorEl, "");
 
   authGoogleButton.hidden = mode === "reset-confirm";
+  authMicrosoftButton.hidden = mode === "reset-confirm";
   authDivider.hidden = mode === "reset-confirm";
   authUsernameField.hidden = mode !== "signup";
   authSignupEmailField.hidden = mode !== "signup";
@@ -2269,6 +2329,16 @@ authGoogleButton?.addEventListener("click", async () => {
   setAuthMessage(authStatusEl, "Redirecting to Google...");
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) setAuthMessage(authErrorEl, error.message);
+});
+
+authMicrosoftButton?.addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  setAuthMessage(authStatusEl, "Redirecting to Microsoft...");
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "azure",
     options: { redirectTo: window.location.origin },
   });
   if (error) setAuthMessage(authErrorEl, error.message);
