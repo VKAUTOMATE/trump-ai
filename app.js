@@ -1071,8 +1071,7 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
         <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${escapeHtml(item.summary || item.text || "")}</p>
-        ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
-        <footer><span>Source: ${escapeHtml(sourceText)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
+                <footer><span>Source: ${escapeHtml(sourceText)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
       `;
       container.append(card);
     });
@@ -1123,8 +1122,7 @@ function renderEconomicsSourceCards(container, items) {
       <p class="card-label">${escapeHtml(economicsCategoryLabel(item.category))}</p>
       <h4>${escapeHtml(item.title)}</h4>
       <p>${escapeHtml(item.summary || item.text || "")}</p>
-      ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
-      <footer>
+            <footer>
         <span>${escapeHtml(item.source || "Economics source")}</span>
         ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">View source</a>` : "<span>Source checked</span>"}
       </footer>
@@ -1137,12 +1135,6 @@ function renderLiveCards(topic, items) {
   if (!container) return;
   liveData[topic] = items;
   renderLandingCards();
-  if (topic === "news") {
-    renderCards("#news-grid", mapNewsLiveToLanes(items));
-  }
-  if (topic === "sports") {
-    renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
-  }
   const staticGrid = document.querySelector(`#${topic === "economics" ? "market" : topic}-grid`);
   if (topic === "economics") {
     if (items.length && staticGrid) {
@@ -1153,6 +1145,17 @@ function renderLiveCards(topic, items) {
       staticGrid.hidden = false;
       staticGrid.removeAttribute("aria-hidden");
       renderMarketsFromLive(items);
+    }
+  } else if (topic === "news" || topic === "sports") {
+    if (items.length && staticGrid) {
+      staticGrid.innerHTML = "";
+      staticGrid.hidden = true;
+      staticGrid.setAttribute("aria-hidden", "true");
+    } else if (staticGrid) {
+      staticGrid.hidden = false;
+      staticGrid.removeAttribute("aria-hidden");
+      if (topic === "news") renderCards("#news-grid", mapNewsLiveToLanes(items));
+      if (topic === "sports") renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
     }
   }
   if (staticGrid && topic !== "sports" && topic !== "news" && topic !== "economics") {
@@ -1202,8 +1205,7 @@ function renderLiveCards(topic, items) {
         <div class="trust-row"><span class="trust-badge fact">Fact Source</span><span>${escapeHtml(item.timestamp || "Live")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${escapeHtml(item.summary || item.text || "")}</p>
-        ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
-        <footer>
+                <footer>
           <span>${escapeHtml(item.source || "Live source")}</span>
           ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
         </footer>
@@ -1351,8 +1353,7 @@ function renderMarketsFromLive(items) {
       <h4>${escapeHtml(label)}</h4>
       <span class="metric-value up">Live</span>
       <p>${escapeHtml(`${item.title}: ${item.summary || item.text}`)}</p>
-      ${item.whyItMatters ? `<p class="source-value">${escapeHtml(item.whyItMatters)}</p>` : ""}
-      <footer>
+            <footer>
         <span>${escapeHtml(item.source || "Live economics source")}</span>
         ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : "<span>Live</span>"}
       </footer>
@@ -2228,7 +2229,8 @@ const authToggleModeButton = document.querySelector("#auth-toggle-mode");
 const authBackToLoginButton = document.querySelector("#auth-back-to-login");
 const authCloseButton = document.querySelector("#auth-close-button");
 const accountButton = document.querySelector("#account-button");
-const accountEmailLabel = document.querySelector("#account-email");
+const accountAvatar = document.querySelector("#account-avatar");
+const accountButtonLabel = document.querySelector("#account-button-label");
 const accountPanel = document.querySelector("#account-panel");
 const accountPanelEmail = document.querySelector("#account-panel-email");
 const accountSignoutButton = document.querySelector("#account-signout-button");
@@ -2312,13 +2314,17 @@ function hideAuthGate() {
 
 async function updateAccountUI() {
   if (!currentUser) return;
-  accountEmailLabel.textContent = currentUser.email;
-  accountEmailLabel.hidden = false;
+  const setDisplayName = (name) => {
+    accountButtonLabel.textContent = name;
+    accountAvatar.textContent = name.charAt(0).toUpperCase();
+    accountAvatar.classList.add("has-initial");
+  };
+  setDisplayName(currentUser.email);
   accountPanelEmail.textContent = currentUser.email;
   if (supabaseClient) {
     const { data } = await supabaseClient.from("profiles").select("username").eq("id", currentUser.id).maybeSingle();
     if (data?.username) {
-      accountEmailLabel.textContent = data.username;
+      setDisplayName(data.username);
       accountPanelEmail.textContent = `${data.username} · ${currentUser.email}`;
     }
   }
