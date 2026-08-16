@@ -608,11 +608,19 @@ export async function loadSports(league = "all") {
     return (data.events || []).slice(0, perSourceLimit).map((event) => {
       const competitors = event.competitions?.[0]?.competitors || [];
       const names = competitors.map((team) => team.team?.shortDisplayName || team.team?.displayName).filter(Boolean).join(" vs ");
-      const scores = competitors.map((team) => `${team.team?.abbreviation || "TEAM"} ${team.score || "0"}`).join(" | ");
+      // ESPN reports "0" as the score for games that haven't started yet, not
+      // null/undefined — so only show a score once the game is actually live
+      // or finished, otherwise a scheduled game misleadingly reads as 0-0.
+      const statusState = event.status?.type?.state; // "pre" | "in" | "post"
+      const hasStarted = statusState === "in" || statusState === "post";
+      const scores = hasStarted
+        ? competitors.map((team) => `${team.team?.abbreviation || "TEAM"} ${team.score ?? "0"}`).join(" | ")
+        : "";
+      const statusLabel = event.status?.type?.shortDetail || (statusState === "pre" ? "Scheduled" : "Live");
       return {
         league: target.key,
         title: names || event.name || `${target.label} event`,
-        text: `${event.status?.type?.shortDetail || "Scheduled"}${scores ? ` - ${scores}` : ""}`,
+        text: `${statusLabel}${scores ? ` - ${scores}` : ""}`,
         source: "espn.com",
         timestamp: event.date ? new Date(event.date).toLocaleString() : "Schedule",
         url: event.links?.[0]?.href,

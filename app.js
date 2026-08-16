@@ -1146,7 +1146,7 @@ function renderLiveCards(topic, items) {
       staticGrid.removeAttribute("aria-hidden");
       renderMarketsFromLive(items);
     }
-  } else if (topic === "news" || topic === "sports") {
+  } else if (topic === "news") {
     if (items.length && staticGrid) {
       staticGrid.innerHTML = "";
       staticGrid.hidden = true;
@@ -1154,9 +1154,16 @@ function renderLiveCards(topic, items) {
     } else if (staticGrid) {
       staticGrid.hidden = false;
       staticGrid.removeAttribute("aria-hidden");
-      if (topic === "news") renderCards("#news-grid", mapNewsLiveToLanes(items));
-      if (topic === "sports") renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
+      renderCards("#news-grid", mapNewsLiveToLanes(items));
     }
+  } else if (topic === "sports" && staticGrid) {
+    // Unlike news, sports' live-grid only ever shows a one-line summary banner
+    // (see below) — the actual score cards always render into #sports-grid,
+    // whether or not live data has loaded. This is not duplication, so it
+    // should always run, regardless of items.length.
+    staticGrid.hidden = false;
+    staticGrid.removeAttribute("aria-hidden");
+    renderCards("#sports-grid", mapSportsLiveToLanes(items), "all", "league");
   }
   if (staticGrid && topic !== "sports" && topic !== "news" && topic !== "economics") {
     staticGrid.hidden = true;
@@ -2206,7 +2213,6 @@ const authGate = document.querySelector("#auth-gate");
 const authHeading = document.querySelector("#auth-heading");
 const authSubtitle = document.querySelector("#auth-subtitle");
 const authGoogleButton = document.querySelector("#auth-google-button");
-const authMicrosoftButton = document.querySelector("#auth-microsoft-button");
 const authDivider = document.querySelector("#auth-divider");
 const authUsernameField = document.querySelector("#auth-username-field");
 const authUsernameInput = document.querySelector("#auth-username");
@@ -2260,7 +2266,6 @@ function setAuthMode(mode) {
   setAuthMessage(authErrorEl, "");
 
   authGoogleButton.hidden = mode === "reset-confirm";
-  authMicrosoftButton.hidden = mode === "reset-confirm";
   authDivider.hidden = mode === "reset-confirm";
   authUsernameField.hidden = mode !== "signup";
   authSignupEmailField.hidden = mode !== "signup";
@@ -2305,6 +2310,12 @@ authCloseButton?.addEventListener("click", () => hideAuthGate());
 
 function showAuthGate() {
   authGate.hidden = false;
+  authIdentifierInput.value = "";
+  authUsernameInput.value = "";
+  authSignupEmailInput.value = "";
+  authPasswordInput.value = "";
+  authNewPasswordInput.value = "";
+  authConfirmPasswordInput.value = "";
   setAuthMode("login");
 }
 
@@ -2340,15 +2351,6 @@ authGoogleButton?.addEventListener("click", async () => {
   if (error) setAuthMessage(authErrorEl, error.message);
 });
 
-authMicrosoftButton?.addEventListener("click", async () => {
-  if (!supabaseClient) return;
-  setAuthMessage(authStatusEl, "Redirecting to Microsoft...");
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "azure",
-    options: { redirectTo: window.location.origin },
-  });
-  if (error) setAuthMessage(authErrorEl, error.message);
-});
 
 authSubmitButton?.addEventListener("click", async () => {
   if (!supabaseClient) return;
