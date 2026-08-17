@@ -1068,7 +1068,7 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
         : item.source || (isSportsGrid ? "Source not loaded" : fallbackSource);
       card.className = "data-card";
       card.innerHTML = `
-        <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span>${isSportsGrid ? "" : `<span>${escapeHtml(item.timestamp || "Load live data")}</span>`}</div>
+        <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span>${item.url ? "" : `<span>${escapeHtml(item.timestamp || "Load live data")}</span>`}</div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${escapeHtml(item.summary || item.text || "")}</p>
                 <footer><span>Source: ${escapeHtml(sourceText)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
