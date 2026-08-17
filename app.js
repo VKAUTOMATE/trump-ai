@@ -1071,6 +1071,7 @@ function renderCards(containerSelector, items, filter = "all", filterKey = "cate
         <div class="trust-row"><span class="trust-badge ${escapeHtml(status)}">${escapeHtml(label)}</span><span>${escapeHtml(item.timestamp || "Load live data")}</span></div>
         <h4>${escapeHtml(item.title)}</h4>
         <p>${escapeHtml(item.summary || item.text || "")}</p>
+        ${isSportsGrid ? `<p class="sports-schedule">&#128197; ${escapeHtml(item.timestamp || "Time to be determined")}</p>` : ""}
                 <footer><span>Source: ${escapeHtml(sourceText)}</span>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open</a>` : `<span>${item.timestamp || "Load live data"}</span>`}</footer>
       `;
       container.append(card);

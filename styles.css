@@ -666,6 +666,18 @@ button:disabled {
   gap: 8px;
 }
 
+.chat-actions .subtle {
+  border-color: var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.chat-actions .subtle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .chat-tools .subtle {
   min-height: 34px;
   padding: 7px 10px;
@@ -970,11 +982,34 @@ button:disabled {
   height: 1px;
 }
 
-.account-email {
-  align-self: center;
-  color: var(--muted);
-  font-size: 12px;
-  max-width: 140px;
+.account-avatar-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  padding-left: 6px;
+}
+
+.account-avatar {
+  align-items: center;
+  background: var(--panel);
+  border-radius: 50%;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 14px;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.account-avatar.has-initial {
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+#account-button-label {
+  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1699,6 +1734,14 @@ textarea,
   margin-top: 10px !important;
 }
 
+.sports-schedule {
+  color: var(--navy, var(--text));
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 10px 0 0 !important;
+}
+
 .data-card footer,
 .metric-card footer {
   align-items: center;
@@ -2044,8 +2087,8 @@ textarea,
     padding: 6px 10px;
   }
 
-  .account-email {
-    max-width: 90px;
+  #account-button-label {
+    max-width: 80px;
   }
 
   .chat-input-shell {
