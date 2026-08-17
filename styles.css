@@ -1734,14 +1734,6 @@ textarea,
   margin-top: 10px !important;
 }
 
-.sports-schedule {
-  color: var(--navy, var(--text));
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  margin: 10px 0 0 !important;
-}
-
 .data-card footer,
 .metric-card footer {
   align-items: center;

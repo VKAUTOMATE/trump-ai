@@ -616,7 +616,18 @@ export async function loadSports(league = "all") {
       const scores = hasStarted
         ? competitors.map((team) => `${team.team?.abbreviation || "TEAM"} ${team.score ?? "0"}`).join(" | ")
         : "";
-      const statusLabel = event.status?.type?.shortDetail || (statusState === "pre" ? "Scheduled" : "Live");
+      // For games that haven't started, always build a real date/time from
+      // event.date ourselves rather than relying on ESPN's shortDetail, which
+      // sometimes is just the bare word "Scheduled" with no time attached.
+      let statusLabel;
+      if (hasStarted) {
+        statusLabel = event.status?.type?.shortDetail || "Live";
+      } else if (event.date) {
+        const gameDate = new Date(event.date);
+        statusLabel = `Kickoff: ${gameDate.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}, ${gameDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+      } else {
+        statusLabel = "Scheduled";
+      }
       return {
         league: target.key,
         title: names || event.name || `${target.label} event`,
