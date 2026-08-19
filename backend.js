@@ -59,7 +59,7 @@ function parseNewsRss(xml, sourceLabel) {
     const link = read("link");
     return {
       title,
-      text: `${published || "Latest"} - ${source}`,
+      text: source,
       source,
       timestamp: published ? new Date(published).toLocaleString() : "Latest",
       url: link,
