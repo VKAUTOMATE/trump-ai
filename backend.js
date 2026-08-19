@@ -616,15 +616,24 @@ export async function loadSports(league = "all") {
       const scores = hasStarted
         ? competitors.map((team) => `${team.team?.abbreviation || "TEAM"} ${team.score ?? "0"}`).join(" | ")
         : "";
-      // For games that haven't started, always build a real date/time from
-      // event.date ourselves rather than relying on ESPN's shortDetail, which
-      // sometimes is just the bare word "Scheduled" with no time attached.
+      // For games that haven't started, prefer ESPN's own shortDetail first —
+      // it's already correctly localized (e.g. "7:00 PM EDT"). Only when ESPN
+      // gives us nothing but the bare word "Scheduled" do we build our own
+      // label, and when we do, we MUST pin an explicit timeZone: without one,
+      // Date formatting defaults to the server's own timezone (Vercel runs in
+      // UTC), not the game's actual local time — that's what caused a real
+      // 7:00 PM EDT game to display as "11:00 PM" (the UTC offset) earlier.
       let statusLabel;
+      const rawDetail = event.status?.type?.shortDetail;
       if (hasStarted) {
-        statusLabel = event.status?.type?.shortDetail || "Live";
+        statusLabel = rawDetail || "Live";
+      } else if (rawDetail && rawDetail.toLowerCase() !== "scheduled") {
+        statusLabel = rawDetail;
       } else if (event.date) {
         const gameDate = new Date(event.date);
-        statusLabel = `Kickoff: ${gameDate.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}, ${gameDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+        const dateOptions = { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" };
+        const timeOptions = { hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" };
+        statusLabel = `Kickoff: ${gameDate.toLocaleDateString("en-US", dateOptions)}, ${gameDate.toLocaleTimeString("en-US", timeOptions)}`;
       } else {
         statusLabel = "Scheduled";
       }
